@@ -6,6 +6,7 @@ RUN apt-get update \
 
 WORKDIR /app
 COPY server.py axml.py ./
+COPY static/ static/
 COPY tools/ tools/
 
 ENV APK_TOOLS_DIR=/app/tools \

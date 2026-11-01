@@ -47,6 +47,62 @@ UPLOAD_TTL = int(os.environ.get('UPLOAD_TTL', '900'))
 _upload_store = {}
 _upload_lock = threading.Lock()
 
+# 分片上传目录：网关（如魔搭 32MB 限制）不允许一次性传大文件时，
+# 前端把 APK 切成 ≤16MB 的分片依次上传，服务端按序拼回完整文件。
+CHUNK_DIR = os.path.join(tempfile.gettempdir(), 'apkchunks')
+
+
+def _valid_sid(sid):
+    return bool(re.fullmatch(r'[A-Za-z0-9_-]{8,64}', sid or ''))
+
+
+def _purge_chunks(now):
+    """清理超过 TTL 的分片目录。"""
+    if not os.path.isdir(CHUNK_DIR):
+        return
+    for name in os.listdir(CHUNK_DIR):
+        d = os.path.join(CHUNK_DIR, name)
+        try:
+            if now - os.path.getmtime(d) > UPLOAD_TTL:
+                shutil.rmtree(d, ignore_errors=True)
+        except OSError:
+            pass
+
+
+def _assemble_chunks(sid):
+    """把分片按序拼成完整 APK 临时文件，成功后删除分片目录。"""
+    d = os.path.join(CHUNK_DIR, sid)
+    if not os.path.isdir(d):
+        raise ApiError('上传分片已失效（超时或服务重启），请重新选择文件',
+                       410, code='expired')
+    parts = sorted(f for f in os.listdir(d) if f.endswith('.part'))
+    if not parts:
+        shutil.rmtree(d, ignore_errors=True)
+        raise ApiError('上传分片为空，请重新选择文件')
+    fd, dst = tempfile.mkstemp(suffix='.apk', prefix='apkupload-')
+    total = 0
+    try:
+        with os.fdopen(fd, 'wb') as out:
+            for name in parts:
+                with open(os.path.join(d, name), 'rb') as fh:
+                    while True:
+                        block = fh.read(1 << 20)
+                        if not block:
+                            break
+                        out.write(block)
+                        total += len(block)
+                if total > MAX_BODY:
+                    raise ApiError('APK 过大，最大支持 %d MB' % (MAX_BODY // 1024 // 1024), 413)
+    except Exception:
+        try:
+            os.unlink(dst)
+        except OSError:
+            pass
+        raise
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    return dst
+
 
 def _purge_uploads_locked(now):
     for key in [k for k, v in _upload_store.items() if now - v[1] > UPLOAD_TTL]:
@@ -327,8 +383,30 @@ class Handler(BaseHTTPRequestHandler):
         cached = None       # 复用的暂存文件（失败时保留，供重试）
         workdir = None
         try:
+            if path == '/api/chunk':
+                qs = parse_qs(urlparse(self.path).query)
+                sid = (qs.get('sid') or [''])[0]
+                idx = (qs.get('idx') or [''])[0]
+                if not _valid_sid(sid) or not idx.isdigit():
+                    raise ApiError('分片参数错误')
+                with _upload_lock:
+                    _purge_chunks(time.time())
+                os.makedirs(os.path.join(CHUNK_DIR, sid), exist_ok=True)
+                part = self._read_body_to_file('.part')
+                dst = os.path.join(CHUNK_DIR, sid, '%010d.part' % int(idx))
+                os.replace(part, dst)
+                self._send_json({'ok': True})
+                return
+
             if path == '/api/analyze':
-                upload = self._read_body_to_file('.apk')
+                qs = parse_qs(urlparse(self.path).query)
+                sid = (qs.get('sid') or [''])[0]
+                if sid:
+                    if not _valid_sid(sid):
+                        raise ApiError('分片参数错误')
+                    upload = _assemble_chunks(sid)
+                else:
+                    upload = self._read_body_to_file('.apk')
                 info = analyze(upload)
                 # 解析成功后暂存文件，打包时凭 uploadId 复用，免二次上传
                 info['uploadId'] = _put_upload(upload)
