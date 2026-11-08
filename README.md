@@ -31,7 +31,7 @@ LICENSE / NOTICE / .env.example / SECURITY.md / CONTRIBUTING.md
 ### Docker（推荐）
 
 ```bash
-git clone https://github.com/Vesper123/apk-rename.git
+git clone https://github.com/vesper-666/apk-rename.git
 cd apk-rename
 docker build -f backend/Dockerfile -t apk-rename backend
 docker run --rm -p 7860:7860 \
@@ -60,13 +60,13 @@ window.APK_CONFIG = {
   apiBase: 'https://你的后端地址',   // 不含结尾斜杠
   author: 'Vesper',
   email: '',
-  feedbackUrl: 'https://github.com/Vesper123/apk-rename/issues'
+  feedbackUrl: 'https://github.com/vesper-666/apk-rename/issues'
 };
 ```
 
 `apiBase` 留空时前端会尝试同源 `/api`，检测不到会给出明确提示。若前后端同源，直接用后端自带的 `backend/static/index.html` 即可，无需配置。
 
-> 部署前请把上面示例中的仓库地址、联系信息替换成你自己的。
+> 部署时请把 `apiBase` 换成你的后端地址，并按需要调整联系邮箱与反馈链接。
 
 ## 环境变量
 
