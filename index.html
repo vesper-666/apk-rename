@@ -13,6 +13,7 @@
     --shadow:0 24px 60px rgba(0,0,0,.45);
   }
   *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
   html,body{margin:0;padding:0}
   body{
     font-family:"PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -131,12 +132,48 @@
   .hist-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:16px 0}
   mark{background:rgba(34,211,238,.30);color:#eaf4ff;border-radius:4px;padding:0 2px}
   @media (max-width:640px){ .hrow .mt{margin-left:0;width:100%} }
+
+  /* ---------- 磨砂玻璃 Dock 栏：横屏靠左竖排，竖屏底部横排 ---------- */
+  .dock{
+    position:fixed; z-index:90; display:flex; gap:6px;
+    background:rgba(21,29,59,.52);
+    border:1px solid rgba(255,255,255,.15);
+    -webkit-backdrop-filter:blur(18px) saturate(160%);
+    backdrop-filter:blur(18px) saturate(160%);
+    box-shadow:0 12px 32px rgba(0,0,0,.38);
+  }
+  .dock-item{
+    display:flex; align-items:center; gap:6px; text-decoration:none;
+    color:var(--txt); font-size:13px; padding:9px 13px; border-radius:12px;
+    transition:.18s; -webkit-tap-highlight-color:transparent
+  }
+  .dock-item:hover{background:rgba(109,123,255,.24)}
+  .dock-item:active{background:rgba(34,211,238,.20)}
+  .dock-item .di-ico{font-size:17px;line-height:1}
+  @media (orientation: landscape){
+    .dock{
+      left:14px; top:50%; transform:translateY(-50%);
+      flex-direction:column; padding:10px 8px; border-radius:20px
+    }
+    .dock-item{flex-direction:column; gap:4px; padding:11px 12px; font-size:12px}
+    .dock-item .di-ico{font-size:19px}
+    body{padding-left:88px}
+  }
+  @media (orientation: portrait){
+    .dock{
+      left:50%; bottom:calc(12px + env(safe-area-inset-bottom)); transform:translateX(-50%);
+      flex-direction:row; padding:8px 10px; border-radius:20px;
+      max-width:calc(100vw - 24px)
+    }
+    body{padding-bottom:104px}
+    .toast{bottom:118px}
+  }
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <header>
+  <header id="top">
     <div class="badge">🔧 在线工具 · 无需安装 · 上传即改</div>
     <h1>在线 APK 包名修改器</h1>
     <p class="sub">自动识别原软件包名，支持自定义新包名；改完自动重新打包、对齐并签名，直接下载安装。</p>
@@ -219,7 +256,7 @@
   </section>
 </div>
 
-<footer>
+<footer id="about">
   <div class="fin">
     <div class="who">开发者：Vesper</div>
     <div class="who">邮箱：<a href="mailto:whofkzyb@outlook.com">whofkzyb@outlook.com</a></div>
@@ -228,6 +265,12 @@
 </footer>
 
 <div class="toast" id="toast"></div>
+
+<nav class="dock" id="dock" aria-label="快捷导航">
+  <a class="dock-item" href="#top"><span class="di-ico">🛠️</span><span class="di-txt">功能</span></a>
+  <a class="dock-item" href="#about"><span class="di-ico">ℹ️</span><span class="di-txt">关于</span></a>
+  <a class="dock-item" href="mailto:whofkzyb@outlook.com?subject=APK%E5%8C%85%E5%90%8D%E4%BF%AE%E6%94%B9%E5%99%A8%20%E5%8F%8D%E9%A6%88"><span class="di-ico">✉️</span><span class="di-txt">反馈</span></a>
+</nav>
 
 <script>
 (function(){
