@@ -1,0 +1,7 @@
+.git
+*.keystore
+.keystore_pass
+*.apk
+__pycache__/
+*.py[cod]
+.env

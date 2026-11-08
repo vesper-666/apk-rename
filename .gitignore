@@ -1,1 +1,25 @@
+# 运行时生成的签名证书与密码 —— 切勿提交
+*.keystore
+*.jks
+.keystore_pass
+
+# 本地环境变量
+.env
+
+# 构建与运行产物
+*.apk
+*.apks
+*.xapk
+*.part
+__pycache__/
+*.py[cod]
+*.log
+
+# 编辑器 / 系统 / 本地工具目录
+.DS_Store
+.idea/
+.vscode/
+.codebuddy/
+
+# ModelScope 创空间部署配置
 ms_deploy.json

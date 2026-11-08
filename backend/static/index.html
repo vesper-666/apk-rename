@@ -13,6 +13,7 @@
     --shadow:0 24px 60px rgba(0,0,0,.45);
   }
   *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
   html,body{margin:0;padding:0}
   body{
     font-family:"PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -131,12 +132,61 @@
   .hist-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:16px 0}
   mark{background:rgba(34,211,238,.30);color:#eaf4ff;border-radius:4px;padding:0 2px}
   @media (max-width:640px){ .hrow .mt{margin-left:0;width:100%} }
+
+  /* ---------- 磨砂玻璃 Dock 栏：横屏靠左竖排，竖屏底部横排 ---------- */
+  .dock{
+    position:fixed; z-index:90; display:flex; gap:4px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.18);
+    -webkit-backdrop-filter:blur(24px) saturate(200%) brightness(1.15);
+    backdrop-filter:blur(24px) saturate(200%) brightness(1.15);
+    box-shadow:
+      0 12px 40px rgba(0,0,0,.45),
+      inset 0 1px 0 rgba(255,255,255,.22),
+      inset 0 -1px 0 rgba(0,0,0,.15);
+  }
+  @supports not (backdrop-filter: blur(1px)){
+    .dock{background:rgba(20,27,60,.88)}
+  }
+  .dock-item{
+    display:flex; align-items:center; gap:6px; text-decoration:none;
+    color:#fff; font-size:13px; padding:9px 13px; border-radius:14px;
+    transition:.18s; -webkit-tap-highlight-color:transparent;
+    text-shadow:0 1px 2px rgba(0,0,0,.5)
+  }
+  .dock-item:hover{
+    background:rgba(255,255,255,.18);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.3)
+  }
+  .dock-item:active{
+    background:rgba(34,211,238,.22);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.25)
+  }
+  .dock-item .di-ico{font-size:17px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
+  @media (orientation: landscape){
+    .dock{
+      left:14px; top:50%; transform:translateY(-50%);
+      flex-direction:column; padding:10px 8px; border-radius:22px
+    }
+    .dock-item{flex-direction:column; gap:4px; padding:11px 12px; font-size:12px}
+    .dock-item .di-ico{font-size:19px}
+    body{padding-left:88px}
+  }
+  @media (orientation: portrait){
+    .dock{
+      left:50%; bottom:calc(12px + env(safe-area-inset-bottom)); transform:translateX(-50%);
+      flex-direction:row; padding:8px 10px; border-radius:22px;
+      max-width:calc(100vw - 24px)
+    }
+    body{padding-bottom:104px}
+    .toast{bottom:118px}
+  }
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <header>
+  <header id="top">
     <div class="badge">🔧 在线工具 · 无需安装 · 上传即改</div>
     <h1>在线 APK 包名修改器</h1>
     <p class="sub">自动识别原软件包名，支持自定义新包名；改完自动重新打包、对齐并签名，直接下载安装。</p>
@@ -146,7 +196,8 @@
     <div class="drop" id="drop">
       <span class="ico">📦</span>
       <b>点击选择 APK 文件，或拖拽到这里</b>
-      <p>支持最大 400 MB</p>
+      <p>改完自动重打包并签名</p>
+      <button class="ghost" id="btnCancelUp" type="button" style="display:none;margin-top:10px">✖ 取消上传</button>
       <input type="file" id="file" accept=".apk,application/vnd.android.package-archive">
     </div>
 
@@ -177,6 +228,7 @@
       <div class="field">
         <button id="btnBuild" type="button">🚀 修改包名并打包 APK</button>
         <button class="ghost" id="btnAgain" type="button" style="display:none">再改一个</button>
+        <button class="ghost" id="btnCancelBuild" type="button" style="display:none">✖ 取消</button>
       </div>
       <div class="bar" id="bar"><i id="barFill"></i></div>
       <div class="hint" id="buildHint"></div>
@@ -217,28 +269,50 @@
   </section>
 </div>
 
-<footer>
+<footer id="about">
   <div class="fin">
-    <div class="who">开发者：Vesper</div>
-    <div class="who">邮箱：<a href="mailto:whofkzyb@outlook.com">whofkzyb@outlook.com</a></div>
+    <div class="who">开发者：<span id="cfgAuthor">-</span></div>
+    <div class="who">联系：<a id="cfgEmail" href="#">-</a></div>
     <div class="sm">在线 APK 包名修改器</div>
   </div>
 </footer>
 
 <div class="toast" id="toast"></div>
 
+<nav class="dock" id="dock" aria-label="快捷导航">
+  <a class="dock-item" href="#top"><span class="di-ico">🛠️</span><span class="di-txt">功能</span></a>
+  <a class="dock-item" href="#about"><span class="di-ico">ℹ️</span><span class="di-txt">关于</span></a>
+  <a class="dock-item" id="cfgFeedback" href="#"><span class="di-ico">✉️</span><span class="di-txt">反馈</span></a>
+</nav>
+
+<script>
+/* ===== 站点配置：部署到自己的环境时只需修改这里 =====
+   apiBase       后端服务地址（不含结尾斜杠），例如 'https://api.example.com'
+                 留空时先尝试同源 /api，检测不到会提示需要配置
+   author/email  开发者信息；feedbackUrl 可填 GitHub Issues 地址，留空则用邮箱 */
+window.APK_CONFIG = {
+  apiBase: '',
+  author: 'Vesper',
+  email: 'whofkzyb@outlook.com',
+  feedbackUrl: ''
+};
+</script>
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
   var state = { file:null, oldPkg:'', version:'', uploadId:'', busy:false };
 
   /* ---------- 后端自动选择：同源没有 API（静态托管）时切到隧道后端 ---------- */
-  var FALLBACK_BASE = 'https://5ff405503db8.hz-1.aicp.space';
-  var apiBase = '';
+  var CFG = window.APK_CONFIG || {};
+  var apiBase = (CFG.apiBase || '').replace(/\/+$/, '');
   (function pickApi(){
+    if(apiBase) return;                      // 已显式配置后端地址，直接使用
+    function noBackend(){
+      toast('未检测到后端服务，请在页面顶部 APK_CONFIG.apiBase 中填写后端地址', true);
+    }
     fetch('/api/health').then(function(r){ return r.json(); }).then(function(j){
-      apiBase = (j && j.ok) ? '' : FALLBACK_BASE;
-    }).catch(function(){ apiBase = FALLBACK_BASE; });
+      if(!(j && j.ok)) noBackend();
+    }).catch(noBackend);
   })();
 
   function toast(msg, bad){
@@ -288,13 +362,17 @@
     if(f) handle(f);
   });
 
+  var curXhr = null;  // 当前进行中的请求，供「取消」按钮中断
   function xhr(method, url, body, onProgress){
     return new Promise(function(resolve, reject){
       var x = new XMLHttpRequest();
+      curXhr = x;
+      function settle(){ curXhr = null; }
       x.open(method, url, true);
       x.responseType = 'blob';
       x.upload.onprogress = function(e){ if(onProgress && e.lengthComputable) onProgress(e.loaded/e.total); };
       x.onload = function(){
+        settle();
         if(x.status >= 200 && x.status < 300){ resolve(x); return; }
         x.response.text().then(function(t){
           var msg = t, code = null;
@@ -304,10 +382,30 @@
           reject(err);
         }, function(){ reject(new Error('HTTP ' + x.status)); });
       };
-      x.onerror = function(){ reject(new Error('网络错误，请检查连接后重试')); };
-      x.onabort = function(){ reject(new Error('已取消')); };
-      x.ontimeout = function(){ reject(new Error('传输超时，请检查网络后重试')); };
+      x.onerror = function(){ settle(); reject(new Error('网络错误，请检查连接后重试')); };
+      x.onabort = function(){ settle(); reject(new Error('已取消')); };
+      x.ontimeout = function(){ settle(); reject(new Error('传输超时，请检查网络后重试')); };
       if(body) x.send(body); else x.send();
+    });
+  }
+
+  /* ---------- 分片上传：16MB 一片，规避网关对单请求的体积限制 ---------- */
+  var CHUNK_SIZE = 16 * 1024 * 1024;
+  function sendFile(file, onProgress){
+    var sid = (window.crypto && crypto.randomUUID)
+      ? crypto.randomUUID().replace(/-/g, '')
+      : ('s' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12) + 'x');
+    return new Promise(function(resolve, reject){
+      var i = 0;
+      function next(){
+        var start = i * CHUNK_SIZE;
+        if(start >= file.size){ resolve(sid); return; }
+        var blob = file.slice(start, Math.min(start + CHUNK_SIZE, file.size));
+        xhr('POST', apiBase + '/api/chunk?sid=' + sid + '&idx=' + i, blob, function(f){
+          if(onProgress) onProgress(Math.min(1, (start + f * blob.size) / file.size));
+        }).then(function(){ i++; next(); }, reject);
+      }
+      next();
     });
   }
 
@@ -331,6 +429,7 @@
     if(state.busy) return;
     if(!/\.apk$/i.test(file.name)){ toast('请选择 .apk 文件', true); return; }
     state.busy = true;
+    $('btnCancelUp').style.display = '';
     var t0 = Date.now();
     function uploadText(p){
       var dt = (Date.now() - t0) / 1000;
@@ -342,10 +441,13 @@
       return '<span class="spin"></span> ' + msg;
     }
     drop.querySelector('b').innerHTML = uploadText(0);
-    xhr('POST', apiBase + '/api/analyze', file, function(p){
-      drop.querySelector('b').innerHTML = uploadText(p);
-    }).then(function(x){
+    sendFile(file, function(frac){
+      drop.querySelector('b').innerHTML = uploadText(frac);
+    }).then(function(sid){
       drop.querySelector('b').innerHTML = '<span class="spin"></span> 上传完成，正在解析…';
+      return xhr('POST', apiBase + '/api/analyze?sid=' + encodeURIComponent(sid) +
+                 '&name=' + encodeURIComponent(file.name));
+    }).then(function(x){
       return x.response.text().then(function(t){ return JSON.parse(t); });
     }).then(function(info){
       if(!info.ok) throw new Error(info.error || '解析失败');
@@ -364,13 +466,24 @@
       $('pkg').value = info.package;
       validate();
       drop.querySelector('b').textContent = '已解析：' + file.name + '（点击可重新选择）';
+      $('btnCancelUp').style.display = 'none';
       state.busy = false;
     }).catch(function(err){
-      toast(err.message, true);
+      $('btnCancelUp').style.display = 'none';
+      if(err.message !== '已取消') toast(err.message, true);
       drop.querySelector('b').textContent = '点击选择 APK 文件，或拖拽到这里';
       state.busy = false;
     });
   }
+
+  /* ---------- 取消上传 / 取消打包 ---------- */
+  $('btnCancelUp').addEventListener('click', function(ev){
+    ev.stopPropagation();  // 不要触发外层 drop 的选文件点击
+    if(curXhr) curXhr.abort();
+  });
+  $('btnCancelBuild').addEventListener('click', function(){
+    if(curXhr) curXhr.abort();
+  });
 
   /* ---------- 打包 ---------- */
   $('btnBuild').addEventListener('click', function(){
@@ -380,6 +493,7 @@
 
     state.busy = true;
     $('btnBuild').disabled = true;
+    $('btnCancelBuild').style.display = '';
     $('result').classList.remove('on');
     $('bar').classList.add('on');
     $('barFill').style.width = '0%';
@@ -387,7 +501,6 @@
 
     var base = apiBase + '/api/build?package=' + encodeURIComponent(pkg) + '&name=' + encodeURIComponent(state.file.name);
     var useCache = !!state.uploadId;
-    var url = base + (useCache ? '&upload_id=' + encodeURIComponent(state.uploadId) : '');
 
     var t0 = Date.now(), done = false;
     function busyText(){
@@ -400,25 +513,39 @@
     var timer = setInterval(function(){ hint.innerHTML = busyText(); }, 1000);
     hint.innerHTML = busyText();
 
-    function send(body, progressable){
-      url = base + (body ? '' : '&upload_id=' + encodeURIComponent(state.uploadId));
-      return xhr('POST', url, body, progressable ? function(r){
-        var pct = Math.max(0.03, Math.min(0.4, r * 0.4));
+    function uploadWithProgress(){
+      $('barFill').style.width = '0%';
+      return sendFile(state.file, function(frac){
+        var pct = Math.max(0.03, Math.min(0.4, frac));
         $('barFill').style.width = (pct*100).toFixed(0) + '%';
-        hint.innerHTML = '<span class="spin"></span> 上传文件 ' + Math.round(r*100) + '% …';
-      } : null);
+        hint.innerHTML = '<span class="spin"></span> 上传文件 ' + Math.round(frac*100) + '% …';
+      }).then(function(sid){
+        return xhr('POST', apiBase + '/api/analyze?sid=' + encodeURIComponent(sid) +
+                   '&name=' + encodeURIComponent(state.file.name));
+      }).then(function(x){
+        return x.response.text().then(function(t){
+          var info = JSON.parse(t);
+          if(!info.ok) throw new Error(info.error || '解析失败');
+          state.uploadId = info.uploadId || '';
+          useCache = true;
+        });
+      });
     }
 
-    send(useCache ? null : state.file, !useCache).catch(function(err){
-      // 暂存过期（服务重启/超时）→ 自动带文件重传一次
-      if(err.code === 'expired' && state.uploadId){
+    var req = (useCache ? Promise.resolve() : uploadWithProgress()).then(function(){
+      return xhr('POST', base + '&upload_id=' + encodeURIComponent(state.uploadId));
+    }).catch(function(err){
+      // 暂存过期（服务重启/超时）→ 重新分片上传再打包
+      if(err.code === 'expired'){
         state.uploadId = '';
-        useCache = false;
-        $('barFill').style.width = '0%';
-        return send(state.file, true);
+        return uploadWithProgress().then(function(){
+          return xhr('POST', base + '&upload_id=' + encodeURIComponent(state.uploadId));
+        });
       }
       throw err;
-    }).then(function(x){
+    });
+
+    req.then(function(x){
       done = true; clearInterval(timer);
       $('barFill').style.width = '100%';
       var blob = x.response;
@@ -436,6 +563,7 @@
       hint.className = 'hint ok';
       hint.textContent = '完成！原包名 ' + state.oldPkg + ' 已改为 ' + pkg + '。';
       $('btnAgain').style.display = '';
+      $('btnCancelBuild').style.display = 'none';
       state.busy = false;
       $('btnBuild').disabled = false;
       $('result').scrollIntoView({behavior:'smooth', block:'center'});
@@ -445,11 +573,17 @@
       if(done) return;
       clearInterval(timer);
       $('bar').classList.remove('on');
+      $('btnCancelBuild').style.display = 'none';
+      state.busy = false;
+      $('btnBuild').disabled = false;
+      if(err.message === '已取消'){
+        hint.className = 'hint';
+        hint.textContent = '已取消。可以重新点击打包。';
+        return;
+      }
       hint.className = 'hint bad';
       hint.textContent = '失败：' + err.message;
       toast(err.message, true);
-      state.busy = false;
-      $('btnBuild').disabled = false;
     });
   });
 
@@ -521,6 +655,18 @@
   }
   $('histQ').addEventListener('input', renderHist);
   renderHist();
+
+  /* 站点信息统一由配置注入，避免个人信息散落在模板各处 */
+  (function applyConfig(){
+    var c = window.APK_CONFIG || {};
+    if(c.author) $('cfgAuthor').textContent = c.author;
+    var mail = c.email || '';
+    var fb = c.feedbackUrl || (mail ? 'mailto:' + mail : '#');
+    var e = $('cfgEmail');
+    if(mail){ e.textContent = mail; e.href = 'mailto:' + mail; }
+    else { e.textContent = '见项目仓库'; e.href = fb; }
+    $('cfgFeedback').href = fb;
+  })();
 })();
 </script>
 </body>

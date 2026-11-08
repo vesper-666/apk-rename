@@ -135,25 +135,38 @@
 
   /* ---------- 磨砂玻璃 Dock 栏：横屏靠左竖排，竖屏底部横排 ---------- */
   .dock{
-    position:fixed; z-index:90; display:flex; gap:6px;
-    background:rgba(21,29,59,.52);
-    border:1px solid rgba(255,255,255,.15);
-    -webkit-backdrop-filter:blur(18px) saturate(160%);
-    backdrop-filter:blur(18px) saturate(160%);
-    box-shadow:0 12px 32px rgba(0,0,0,.38);
+    position:fixed; z-index:90; display:flex; gap:4px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.18);
+    -webkit-backdrop-filter:blur(24px) saturate(200%) brightness(1.15);
+    backdrop-filter:blur(24px) saturate(200%) brightness(1.15);
+    box-shadow:
+      0 12px 40px rgba(0,0,0,.45),
+      inset 0 1px 0 rgba(255,255,255,.22),
+      inset 0 -1px 0 rgba(0,0,0,.15);
+  }
+  @supports not (backdrop-filter: blur(1px)){
+    .dock{background:rgba(20,27,60,.88)}
   }
   .dock-item{
     display:flex; align-items:center; gap:6px; text-decoration:none;
-    color:var(--txt); font-size:13px; padding:9px 13px; border-radius:12px;
-    transition:.18s; -webkit-tap-highlight-color:transparent
+    color:#fff; font-size:13px; padding:9px 13px; border-radius:14px;
+    transition:.18s; -webkit-tap-highlight-color:transparent;
+    text-shadow:0 1px 2px rgba(0,0,0,.5)
   }
-  .dock-item:hover{background:rgba(109,123,255,.24)}
-  .dock-item:active{background:rgba(34,211,238,.20)}
-  .dock-item .di-ico{font-size:17px;line-height:1}
+  .dock-item:hover{
+    background:rgba(255,255,255,.18);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.3)
+  }
+  .dock-item:active{
+    background:rgba(34,211,238,.22);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.25)
+  }
+  .dock-item .di-ico{font-size:17px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
   @media (orientation: landscape){
     .dock{
       left:14px; top:50%; transform:translateY(-50%);
-      flex-direction:column; padding:10px 8px; border-radius:20px
+      flex-direction:column; padding:10px 8px; border-radius:22px
     }
     .dock-item{flex-direction:column; gap:4px; padding:11px 12px; font-size:12px}
     .dock-item .di-ico{font-size:19px}
@@ -162,7 +175,7 @@
   @media (orientation: portrait){
     .dock{
       left:50%; bottom:calc(12px + env(safe-area-inset-bottom)); transform:translateX(-50%);
-      flex-direction:row; padding:8px 10px; border-radius:20px;
+      flex-direction:row; padding:8px 10px; border-radius:22px;
       max-width:calc(100vw - 24px)
     }
     body{padding-bottom:104px}
@@ -258,8 +271,8 @@
 
 <footer id="about">
   <div class="fin">
-    <div class="who">开发者：Vesper</div>
-    <div class="who">邮箱：<a href="mailto:whofkzyb@outlook.com">whofkzyb@outlook.com</a></div>
+    <div class="who">开发者：<span id="cfgAuthor">-</span></div>
+    <div class="who">联系：<a id="cfgEmail" href="#">-</a></div>
     <div class="sm">在线 APK 包名修改器</div>
   </div>
 </footer>
@@ -269,21 +282,37 @@
 <nav class="dock" id="dock" aria-label="快捷导航">
   <a class="dock-item" href="#top"><span class="di-ico">🛠️</span><span class="di-txt">功能</span></a>
   <a class="dock-item" href="#about"><span class="di-ico">ℹ️</span><span class="di-txt">关于</span></a>
-  <a class="dock-item" href="mailto:whofkzyb@outlook.com?subject=APK%E5%8C%85%E5%90%8D%E4%BF%AE%E6%94%B9%E5%99%A8%20%E5%8F%8D%E9%A6%88"><span class="di-ico">✉️</span><span class="di-txt">反馈</span></a>
+  <a class="dock-item" id="cfgFeedback" href="#"><span class="di-ico">✉️</span><span class="di-txt">反馈</span></a>
 </nav>
 
+<script>
+/* ===== 站点配置：部署到自己的环境时只需修改这里 =====
+   apiBase       后端服务地址（不含结尾斜杠），例如 'https://api.example.com'
+                 留空时先尝试同源 /api，检测不到会提示需要配置
+   author/email  开发者信息；feedbackUrl 可填 GitHub Issues 地址，留空则用邮箱 */
+window.APK_CONFIG = {
+  apiBase: '',
+  author: 'Vesper',
+  email: 'whofkzyb@outlook.com',
+  feedbackUrl: ''
+};
+</script>
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
   var state = { file:null, oldPkg:'', version:'', uploadId:'', busy:false };
 
   /* ---------- 后端自动选择：同源没有 API（静态托管）时切到隧道后端 ---------- */
-  var FALLBACK_BASE = 'https://vesper123-apk-rename.ms.show';
-  var apiBase = '';
+  var CFG = window.APK_CONFIG || {};
+  var apiBase = (CFG.apiBase || '').replace(/\/+$/, '');
   (function pickApi(){
+    if(apiBase) return;                      // 已显式配置后端地址，直接使用
+    function noBackend(){
+      toast('未检测到后端服务，请在页面顶部 APK_CONFIG.apiBase 中填写后端地址', true);
+    }
     fetch('/api/health').then(function(r){ return r.json(); }).then(function(j){
-      apiBase = (j && j.ok) ? '' : FALLBACK_BASE;
-    }).catch(function(){ apiBase = FALLBACK_BASE; });
+      if(!(j && j.ok)) noBackend();
+    }).catch(noBackend);
   })();
 
   function toast(msg, bad){
@@ -626,6 +655,18 @@
   }
   $('histQ').addEventListener('input', renderHist);
   renderHist();
+
+  /* 站点信息统一由配置注入，避免个人信息散落在模板各处 */
+  (function applyConfig(){
+    var c = window.APK_CONFIG || {};
+    if(c.author) $('cfgAuthor').textContent = c.author;
+    var mail = c.email || '';
+    var fb = c.feedbackUrl || (mail ? 'mailto:' + mail : '#');
+    var e = $('cfgEmail');
+    if(mail){ e.textContent = mail; e.href = 'mailto:' + mail; }
+    else { e.textContent = '见项目仓库'; e.href = fb; }
+    $('cfgFeedback').href = fb;
+  })();
 })();
 </script>
 </body>
