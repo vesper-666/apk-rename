@@ -870,7 +870,8 @@ window.APK_CONFIG = {
       return rawRequest(base + '/api/health',
         { method:'GET', json:true, timeout:6000, retries:0 })
         .then(function(j){
-          if(!j || !j.ok) throw new Error('health not ok');
+          // 只认本项目后端：网关/静态站点也会回 {"ok":true}，但没有 version
+          if(!j || !j.ok || !j.version) throw new Error('not our backend');
           apiBase = base; return base;
         })
         .catch(function(){ failed[base] = true; return tryOne(i + 1); });
@@ -888,7 +889,11 @@ window.APK_CONFIG = {
     // 填了地址就先单独验证：避免「看似连上，其实悄悄回退到默认后端」的误导
     var probe = v
       ? rawRequest(v + '/api/health', {method:'GET', json:true, timeout:6000, retries:0})
-          .then(function(j){ if(!j || !j.ok) throw new Error('health not ok'); })
+          .then(function(j){
+            if(!j || !j.ok || !j.version){
+              var e = new Error('not our backend'); e.soft = true; throw e;
+            }
+          })
       : Promise.resolve();
     return probe.then(function(){
       try{
@@ -902,7 +907,12 @@ window.APK_CONFIG = {
         return base;
       });
     }).catch(function(err){
-      if(!quiet) toast('连不上「' + (v || '默认地址') + '」。请确认服务已启动、网址以 https:// 开头，且末尾不要带 /api', true);
+      if(!quiet){
+        if(err && err.soft)
+          toast('这个地址能打开，但不是本项目后端 —— 空间可能还是「静态站点」，请把 SDK 改成 Docker 并重启', true);
+        else
+          toast('连不上「' + (v || '默认地址') + '」。请确认服务已启动、网址以 https:// 开头、末尾不要带 /api', true);
+      }
       throw err;
     });
   }
@@ -1401,6 +1411,7 @@ window.APK_CONFIG = {
   /* ===== 「⚙️ 后端」面板：不用改代码，粘网址即可 ===== */
   (function bindBackendPanel(){
     var inp = $('backendUrl'), hint = $('backendHint');
+    var probeDone = false;
     function fill(){
       var saved = savedBackend();
       var def = '';
@@ -1408,8 +1419,10 @@ window.APK_CONFIG = {
         for(var i=0;i<CFG.apiBase.length;i++) if(CFG.apiBase[i]){ def = CFG.apiBase[i]; break; }
       }
       inp.value = saved || def;
-      var cur = apiBase === null ? '正在检测…' : (apiBase || '同源 /api');
-      hint.textContent = '当前连接：' + cur + (saved ? '（你填的地址已保存）' : '（默认地址）');
+      var cur = apiBase === null
+        ? (probeDone ? '未连接' : '正在检测…')
+        : (apiBase || '同源 /api');
+      hint.textContent = '当前：' + cur + (saved ? '（你填的地址已保存）' : '（默认地址）');
     }
     fill();
     $('btnBackendSave').addEventListener('click', function(){
@@ -1421,7 +1434,10 @@ window.APK_CONFIG = {
     $('btnBackendReset').addEventListener('click', function(){
       applyBackend('').then(fill).catch(function(){ fill(); });
     });
-    ensureApi().then(fill).catch(function(){ fill(); });
+    ensureApi().then(
+      function(){ probeDone = true; fill(); },
+      function(){ probeDone = true; fill(); }
+    );
   })();
 
   // 页面加载即探活一次，尽早提示后端未配置（失败只提示一次）
