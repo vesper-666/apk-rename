@@ -317,8 +317,64 @@ mark{background:var(--hl);color:var(--txt);border-radius:4px;padding:0 2px}
 .slider label b{color:var(--txt);font-variant-numeric:tabular-nums}
 .slider input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
 
+/* ---------- Dock 上的新功能：外观浮层 ---------- */
+.dock-item.is-on{color:var(--accent2)}
+button.dock-item{background:transparent;border:0;color:var(--txt);font-weight:400;
+  padding:9px 13px;border-radius:14px;white-space:nowrap;font-family:inherit;
+  display:flex;align-items:center;gap:6px;font-size:13px}
+button.dock-item:hover{filter:none;transform:none;color:var(--accent2)}
+button.dock-item:active{transform:scale(.97)}
+.look-scrim{position:fixed;inset:0;z-index:94;background:rgba(3,7,18,.46);
+  -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+  opacity:0;visibility:hidden;transition:opacity .26s,visibility .26s}
+.look-scrim.on{opacity:1;visibility:visible}
+/* 浮层展开时让提示条让位，避免长文本挡住设置项 */
+body.look-open .toast{opacity:0;visibility:hidden}
+.look-pop{position:fixed;z-index:95;width:min(440px,calc(100vw - 24px));
+  max-height:min(76vh,700px);overflow-y:auto;overscroll-behavior:contain;
+  padding:20px 22px;border-radius:22px;margin:0;
+  transform:translateY(14px) scale(.97);opacity:0;visibility:hidden;
+  transition:transform .36s cubic-bezier(.2,1.16,.34,1),opacity .26s,visibility .26s}
+.look-pop.on{opacity:1;visibility:visible}
+.look-pop .lp-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin:0 0 4px;font-size:15px;font-weight:700}
+.look-pop .lp-head .tag{font-weight:400}
+.look-pop .lp-close{margin-left:auto;padding:6px 11px;font-size:12.5px;border-radius:9px}
+.look-pop .sec{margin-top:14px}
+.look-pop .sliders{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px 14px}
+.look-pop .toggle-row{flex-wrap:wrap;gap:8px}
+.look-pop .toggle-row > span{flex:1;min-width:0;line-height:1.5;font-size:13px}
+.look-pop .swatch{min-width:60px}
+.look-pop .lp-tip{font-size:12.5px;color:var(--muted);line-height:1.6;margin:2px 0 0}
+.look-pop .lp-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.look-pop .lp-foot .tag{margin-left:auto}
+.panel.flash{animation:flashCard 1.3s ease}
+@keyframes flashCard{
+  0%,100%{box-shadow:var(--glass-shadow),var(--shadow)}
+  30%{box-shadow:0 0 0 3px rgba(34,211,238,.55),var(--glass-shadow),var(--shadow)}
+}
+@media (orientation: landscape){
+  .look-pop{left:104px;top:50%;transform:translate(-10px,-50%) scale(.97)}
+  .look-pop.on{transform:translate(0,-50%) scale(1)}
+}
+@media (orientation: portrait){
+  .look-pop{left:50%;bottom:calc(86px + env(safe-area-inset-bottom));
+    max-height:min(82vh,720px);
+    transform:translate(-50%,16px) scale(.97)}
+  .look-pop.on{transform:translate(-50%,0) scale(1)}
+}
+@media (orientation: portrait) and (max-width:560px){
+  .dock-item .di-txt{display:none}
+  .dock-item{padding:10px 12px}
+  .dock-item .di-ico{font-size:20px}
+}
+@media (prefers-reduced-motion:reduce){
+  .look-pop,.look-scrim,.panel.flash{transition:none;animation:none}
+}
+
 /* ---------- 磨砂玻璃 Dock：横屏靠左竖排，竖屏底部横排 ---------- */
-.dock{position:fixed;z-index:90;display:flex;gap:4px;
+.dock{position:fixed;z-index:96;display:flex;gap:4px;
   background:rgba(255,255,255,.05);border:1px solid var(--line-strong);border-radius:22px;
   -webkit-backdrop-filter:blur(6px) saturate(190%);backdrop-filter:blur(6px) saturate(190%);
   box-shadow:0 12px 40px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.24),inset 0 -1px 0 rgba(0,0,0,.14)}
@@ -451,12 +507,44 @@ body.no-glass .dock-pill{-webkit-backdrop-filter:none;backdrop-filter:none;backg
     </div>
   </section>
 
-  <section class="panel glass" id="appearancePanel">
-    <h3 style="margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:10px">
+  <section class="panel glass" id="histPanel">
+    <h3 style="margin:0 0 14px;font-size:15px">🕘 修改历史<span class="tag" style="margin-left:10px">仅自己可见</span></h3>
+    <div class="hist-tools">
+      <input type="text" id="histQ" spellcheck="false" autocomplete="off" placeholder="输入软件名…">
+      <span class="hist-count" id="histCount"></span>
+    </div>
+    <div class="hist-list" id="histList"></div>
+    <div class="hint" style="margin-top:12px">历史仅保存在你自己的浏览器里（最多 100 条），不会上传服务器；清除浏览器数据会清空历史。</div>
+  </section>
+
+  <section class="panel glass">
+    <h3 style="margin:0 0 14px;font-size:15px">使用说明</h3>
+    <div class="steps">
+      <div class="step"><b>① 自动识别</b><p>解析二进制 AndroidManifest.xml，读出原包名、版本号、应用名与 SDK 级别。</p></div>
+      <div class="step"><b>② 自定义</b><p>改包名、应用名称，或上传自己的图标；格式实时校验，避免打包后无法安装。</p></div>
+      <div class="step"><b>③ 自动打包签名</b><p>重写 manifest → 替换图标 → 重打包 → zipalign 对齐 → 全新证书签名并校验。</p></div>
+    </div>
+    <ul class="notes" style="margin-top:16px">
+      <li>修改包名后，新应用与原应用视为<strong>两个不同的应用</strong>，可同时安装，数据互不相通。</li>
+      <li>改包名时会<strong>自动同步改写</strong> ContentProvider authorities、自定义权限名与 sharedUserId，避免与设备上已装的原应用冲突导致「应用未安装」。</li>
+      <li>应用名称通过把 manifest 的 label 改成字面量字符串实现，不影响其他资源；图标按各分辨率原始尺寸重绘替换。使用<strong>矢量图标</strong>或 WebP 动图的 APK，图标替换可能不生效。</li>
+      <li>APK 会使用本站证书<strong>重新签名</strong>，因此覆盖安装同名旧版本会失败，请先卸载旧版。</li>
+      <li>请仅修改你拥有合法授权的应用；本工具不保存任何上传文件。</li>
+    </ul>
+  </section>
+</div>
+
+  <!-- 新增功能统一从 Dock 打开：页面主体只保留打包流程 -->
+  <div class="look-scrim" id="lookScrim"></div>
+  <section class="look-pop glass" id="appearancePanel" role="dialog" aria-modal="true"
+           aria-label="外观设置" aria-hidden="true">
+    <div class="lp-head">
       🎨 外观设置
       <span class="tag">仅保存在本机浏览器</span>
-      <button class="ghost mini pressable" id="btnApReset" type="button" style="margin-left:auto">重置</button>
-    </h3>
+      <button class="ghost mini pressable lp-close" id="btnLookClose" type="button" aria-label="关闭">✖ 关闭</button>
+    </div>
+    <p class="lp-tip">主题、背景图与液态玻璃都在这里；应用名称与图标在主面板第 ③ 步，或点 Dock 的「📱 改应用」快速定位。</p>
+
     <div class="sec">
       <label class="lbl">主题颜色</label>
       <div class="swatches" id="swatches">
@@ -490,34 +578,12 @@ body.no-glass .dock-pill{-webkit-backdrop-filter:none;backdrop-filter:none;backg
         <div class="slider"><label>表面色 <b id="vTint">0.10</b></label><input type="range" id="gTint" min="0" max="0.30" step="0.01" value="0.10"></div>
       </div>
     </div>
-  </section>
 
-  <section class="panel glass" id="histPanel">
-    <h3 style="margin:0 0 14px;font-size:15px">🕘 修改历史<span class="tag" style="margin-left:10px">仅自己可见</span></h3>
-    <div class="hist-tools">
-      <input type="text" id="histQ" spellcheck="false" autocomplete="off" placeholder="输入软件名…">
-      <span class="hist-count" id="histCount"></span>
+    <div class="lp-foot">
+      <button class="ghost mini pressable" id="btnApReset" type="button">↺ 重置全部</button>
+      <span class="tag">改动即时生效并自动保存</span>
     </div>
-    <div class="hist-list" id="histList"></div>
-    <div class="hint" style="margin-top:12px">历史仅保存在你自己的浏览器里（最多 100 条），不会上传服务器；清除浏览器数据会清空历史。</div>
   </section>
-
-  <section class="panel glass">
-    <h3 style="margin:0 0 14px;font-size:15px">使用说明</h3>
-    <div class="steps">
-      <div class="step"><b>① 自动识别</b><p>解析二进制 AndroidManifest.xml，读出原包名、版本号、应用名与 SDK 级别。</p></div>
-      <div class="step"><b>② 自定义</b><p>改包名、应用名称，或上传自己的图标；格式实时校验，避免打包后无法安装。</p></div>
-      <div class="step"><b>③ 自动打包签名</b><p>重写 manifest → 替换图标 → 重打包 → zipalign 对齐 → 全新证书签名并校验。</p></div>
-    </div>
-    <ul class="notes" style="margin-top:16px">
-      <li>修改包名后，新应用与原应用视为<strong>两个不同的应用</strong>，可同时安装，数据互不相通。</li>
-      <li>改包名时会<strong>自动同步改写</strong> ContentProvider authorities、自定义权限名与 sharedUserId，避免与设备上已装的原应用冲突导致「应用未安装」。</li>
-      <li>应用名称通过把 manifest 的 label 改成字面量字符串实现，不影响其他资源；图标按各分辨率原始尺寸重绘替换。使用<strong>矢量图标</strong>或 WebP 动图的 APK，图标替换可能不生效。</li>
-      <li>APK 会使用本站证书<strong>重新签名</strong>，因此覆盖安装同名旧版本会失败，请先卸载旧版。</li>
-      <li>请仅修改你拥有合法授权的应用；本工具不保存任何上传文件。</li>
-    </ul>
-  </section>
-</div>
 
 <footer class="glass" id="about">
   <div class="fin">
@@ -532,7 +598,9 @@ body.no-glass .dock-pill{-webkit-backdrop-filter:none;backdrop-filter:none;backg
 <nav class="dock glass" id="dock" aria-label="快捷导航">
   <div class="dock-pill" id="dockPill"></div>
   <a class="dock-item" href="#top"><span class="di-ico">🛠️</span><span class="di-txt">功能</span></a>
-  <a class="dock-item" href="#appearancePanel"><span class="di-ico">🎨</span><span class="di-txt">外观</span></a>
+  <button class="dock-item" id="dockApp" type="button" title="自定义应用名称与图标"><span class="di-ico">📱</span><span class="di-txt">改应用</span></button>
+  <button class="dock-item" id="dockLook" type="button" title="主题 / 背景图 / 液态玻璃" aria-expanded="false" aria-controls="appearancePanel"><span class="di-ico">🎨</span><span class="di-txt">外观</span></button>
+  <button class="dock-item" id="dockTheme" type="button" title="一键切换主题"><span class="di-ico">🌓</span><span class="di-txt">主题</span></button>
   <a class="dock-item" href="#histPanel"><span class="di-ico">🕘</span><span class="di-txt">历史</span></a>
   <a class="dock-item" id="cfgFeedback" href="#"><span class="di-ico">✉️</span><span class="di-txt">反馈</span></a>
 </nav>
@@ -657,6 +725,8 @@ window.APK_CONFIG = {
       pill.style.opacity = appear.glass ? '1' : '.7';
     }
     function current(){
+      var pop = $('appearancePanel');
+      if(pop && pop.classList.contains('on')) return $('dockLook');
       var h = location.hash;
       for(var i=0;i<items.length;i++) if(items[i].getAttribute('href') === h) return items[i];
       return items[0];
@@ -671,6 +741,72 @@ window.APK_CONFIG = {
     window.addEventListener('resize', function(){ move(current()); });
     window.addEventListener('load', function(){ setTimeout(function(){ move(current()); }, 60); });
     setTimeout(function(){ move(current()); }, 60);
+  })();
+
+  /* ============ Dock 新功能：外观浮层 / 主题快切 / 改应用定位 ============ */
+  (function initLookDock(){
+    var pop = $('appearancePanel'), scrim = $('lookScrim');
+    var btnLook = $('dockLook'), btnTheme = $('dockTheme'), btnApp = $('dockApp');
+    var THEMES = [
+      {k:'dark',   n:'暗夜', i:'🌙'}, {k:'light',  n:'白昼', i:'☀️'},
+      {k:'blue',   n:'天蓝', i:'💙'}, {k:'violet', n:'靛紫', i:'💜'},
+      {k:'teal',   n:'青碧', i:'💚'}, {k:'rose',   n:'樱粉', i:'🌸'}
+    ];
+    function isOpen(){ return pop.classList.contains('on'); }
+    function setOpen(on){
+      pop.classList.toggle('on', on);
+      scrim.classList.toggle('on', on);
+      document.body.classList.toggle('look-open', on);
+      pop.setAttribute('aria-hidden', on ? 'false' : 'true');
+      btnLook.setAttribute('aria-expanded', on ? 'true' : 'false');
+      btnLook.classList.toggle('is-on', on);
+      if(on){ try{ $('btnLookClose').focus({preventScroll:true}); }catch(e){} }
+    }
+    btnLook.addEventListener('click', function(){ setOpen(!isOpen()); });
+    $('btnLookClose').addEventListener('click', function(){ setOpen(false); });
+    scrim.addEventListener('click', function(){ setOpen(false); });
+    document.addEventListener('keydown', function(ev){
+      if((ev.key === 'Escape' || ev.keyCode === 27) && isOpen()) setOpen(false);
+    });
+    // 点导航类入口时收起浮层；「主题」是快捷调节，保持浮层打开以便实时看效果
+    [].slice.call($('dock').querySelectorAll('.dock-item')).forEach(function(it){
+      if(it === btnLook || it === btnTheme) return;
+      it.addEventListener('click', function(){ if(isOpen()) setOpen(false); });
+    });
+
+    function syncThemeBtn(){
+      var t = THEMES[0];
+      for(var i=0;i<THEMES.length;i++) if(THEMES[i].k === appear.theme) t = THEMES[i];
+      btnTheme.querySelector('.di-ico').textContent = t.i;
+      btnTheme.title = '当前主题：' + t.n + '（点击切换下一套）';
+    }
+    btnTheme.addEventListener('click', function(){
+      var idx = 0;
+      for(var i=0;i<THEMES.length;i++) if(THEMES[i].k === appear.theme) idx = i;
+      var t = THEMES[(idx + 1) % THEMES.length];
+      appear.theme = t.k; saveAppear(); applyAppearance(); syncThemeBtn();
+      toast('主题已切换为「' + t.n + '」');
+    });
+    syncThemeBtn();
+
+    btnApp.addEventListener('click', function(){
+      var sec = $('editSec');
+      if(!sec || getComputedStyle(sec).display === 'none'){
+        $('drop').scrollIntoView({behavior:'smooth', block:'center'});
+        toast('请先选择 APK 文件，再自定义应用名称与图标');
+        return;
+      }
+      sec.scrollIntoView({behavior:'smooth', block:'center'});
+      setTimeout(function(){
+        var box = $('appLabel');
+        try{ box.focus({preventScroll:true}); }catch(e){ try{ box.focus(); }catch(e2){} }
+        var card = box.closest ? box.closest('.panel') : null;
+        if(card){
+          card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+          setTimeout(function(){ card.classList.remove('flash'); }, 1400);
+        }
+      }, 320);
+    });
   })();
 
   /* ================= 后端选择：多候选探活 + 故障转移 ================= */
