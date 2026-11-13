@@ -1,12 +1,13 @@
 # 首次启动需要 keytool 生成签名证书，因此用 JDK 而非 JRE
 FROM eclipse-temurin:17-jdk
 
+# python3-pil：自定义图标需要按原资源尺寸重绘，缺了也能跑（降级为原图直写）
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 \
+    && apt-get install -y --no-install-recommends python3 python3-pil \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY server.py axml.py ./
+COPY server.py axml.py assets.py ./
 COPY static/ static/
 COPY tools/ tools/
 

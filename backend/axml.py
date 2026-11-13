@@ -167,10 +167,11 @@ def _decode_value(pool, data_type, data):
 
 
 def _scan(buf):
-    """返回 (pool_offset, pool, {元素: {属性: (pos, type, raw)}}, 元素顺序, 待改写属性出现表)。
+    """返回 (pool_offset, pool, 元素表, 元素顺序, 待改写属性表, label 属性表)。
 
-    pos 是属性结构体在 buf 中的绝对偏移（rawValue 在 pos+8，data 在 pos+16）。
+    pos 是属性结构体在 buf 中的绝对偏移（dataType 在 pos+15，data 在 pos+16）。
     occ 收集 REWRITE_KEYS 中每一处属性出现（同名属性可能多次出现，如多个 provider）。
+    labels 收集所有 android:label 出现位置，供「自定义应用名称」统一改写。
     """
     if len(buf) < 8 or _u16(buf, 0) != RES_XML_TYPE:
         raise AxmlError('不是有效的二进制 XML（缺少 RES_XML_TYPE 头）')
@@ -185,6 +186,7 @@ def _scan(buf):
     elements = {}
     order = []
     occ = {}
+    labels = []
     off = root_hs
 
     while off + 8 <= root_size:
@@ -218,6 +220,10 @@ def _scan(buf):
                 key = pool.strings[aname_idx] if aname_idx < len(pool.strings) else ''
                 if (el, key) in REWRITE_KEYS:
                     occ.setdefault((el, key), []).append((p, data_type, data))
+                # 启动器显示的是 application 或带 MAIN/LAUNCHER 的 activity 的 label，
+                # 全部收集下来一起改，避免「改了应用名但桌面没变」。
+                if key == 'label' and el in ('application', 'activity', 'activity-alias'):
+                    labels.append((el, p, data_type, data))
                 # 同名属性只保留第一个（manifest 上的 package 只有一个）
                 if key and key not in bucket:
                     bucket[key] = (p, data_type, data)
@@ -226,12 +232,12 @@ def _scan(buf):
 
     if pool_off is None:
         raise AxmlError('manifest 中缺少字符串池')
-    return pool_off, pool, elements, order, occ
+    return pool_off, pool, elements, order, occ, labels
 
 
 def read_info(buf):
     """读取 manifest 元数据。"""
-    pool_off, pool, elements, order, _occ = _scan(buf)
+    pool_off, pool, elements, order, _occ, _labels = _scan(buf)
 
     manifest = elements.get('manifest', {})
     pkg_pos, pkg_type, pkg_data = manifest.get('package', (None, None, None))
@@ -305,7 +311,7 @@ REWRITE_KEYS = {
 
 def set_package(buf, new_package):
     """返回改写后的 AndroidManifest.xml 字节。"""
-    pool_off, pool, elements, _, occ = _scan(buf)
+    pool_off, pool, elements, _, occ, _ = _scan(buf)
     manifest = elements.get('manifest', {})
     pkg_item = manifest.get('package')
     if not pkg_item:
@@ -356,4 +362,38 @@ def set_package(buf, new_package):
         p = pos + total_delta
         struct.pack_into('<I', out, p + 8, value_idx[val])
         struct.pack_into('<I', out, p + 16, value_idx[val])
+    return bytes(out)
+
+
+def set_label(buf, new_label):
+    """把应用名称（android:label）统一改成 new_label，返回改写后的 manifest 字节。
+
+    绝大多数 APK 的 label 是 ``@string/app_name``（TYPE_REFERENCE），值指向
+    resources.arsc 里的资源 ID；要改名就得改写复杂的资源表。这里换一条更稳的路：
+    AXML 规范允许 label 直接是字面量字符串，因此把该属性的 typedValue 从
+    TYPE_REFERENCE 改成 TYPE_STRING，并让它指向新追加的字符串池条目即可，
+    PackageManager / aapt 都能正常解析，且完全不碰 resources.arsc。
+
+    application、activity、activity-alias 上的 label 一起改，保证桌面图标名
+    和各个页面标题同步更新。
+    """
+    if not new_label:
+        return buf
+    pool_off, pool, _elements, _order, _occ, labels = _scan(buf)
+    if not labels:
+        raise AxmlError('manifest 中未找到 android:label，无法修改应用名')
+
+    orig_pool_size = pool.size
+    chunk = buf[pool_off:pool_off + orig_pool_size]
+    chunk, idx = pool.append(chunk, new_label)
+    total_delta = len(chunk) - orig_pool_size
+
+    out = bytearray(buf[:pool_off]) + bytearray(chunk) + \
+        bytearray(buf[pool_off + orig_pool_size:])
+    struct.pack_into('<I', out, 4, len(out))  # 根 chunk 总长
+    for _el, pos, _dtype, _data in labels:
+        p = pos + total_delta
+        out[p + 15] = TYPE_STRING                 # 资源引用 -> 字面量字符串
+        struct.pack_into('<I', out, p + 8, idx)  # rawValue
+        struct.pack_into('<I', out, p + 16, idx)  # typedValue.data
     return bytes(out)

@@ -29,3 +29,10 @@ Third-party components
    https://adoptium.net/
    Not distributed in this repository; used only as a build/runtime
    base image defined in backend/Dockerfile.
+
+3) Pillow (optional runtime dependency, installed in the Docker image)
+   Copyright (c) 1997- by the Pillow contributors; HPND historical license
+   https://python-pillow.org/ / https://github.com/python-pillow/Pillow
+   Used only to redraw custom app icons at each resource's original size.
+   Not distributed in this repository; the service degrades to writing the
+   original image bytes when Pillow is unavailable.

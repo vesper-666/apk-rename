@@ -1,203 +1,391 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>在线 APK 包名修改器 · 自动识别原包名 · 一键打包下载</title>
-<meta name="description" content="在线修改 Android APK 的软件包名：自动识别原包名、支持自定义包名、改完自动重新打包签名，直接下载。">
+<title>在线 APK 包名修改器 · 自定义应用名与图标 · 一键打包下载</title>
+<meta name="description" content="在线修改 Android APK 的软件包名、应用名称与图标，自动识别原包名，改完自动重新打包签名，直接下载。">
 <style>
-  :root{
-    --bg:#0b1020; --bg2:#111834; --card:#151d3b; --card2:#1a2350;
-    --line:rgba(255,255,255,.09); --txt:#e9edff; --muted:#9aa6d2;
-    --accent:#6d7bff; --accent2:#22d3ee; --ok:#34d399; --bad:#fb7185;
-    --shadow:0 24px 60px rgba(0,0,0,.45);
-  }
-  *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  html,body{margin:0;padding:0}
-  body{
-    font-family:"PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    color:var(--txt); background:
-      radial-gradient(1100px 620px at 12% -8%, rgba(109,123,255,.30), transparent 60%),
-      radial-gradient(900px 560px at 92% 4%, rgba(34,211,238,.22), transparent 60%),
-      linear-gradient(180deg,var(--bg),var(--bg2) 60%,#0a0f1f);
-    min-height:100vh; display:flex; flex-direction:column; line-height:1.6;
-  }
-  .wrap{width:100%;max-width:940px;margin:0 auto;padding:0 20px;flex:1}
-  header{padding:44px 0 10px;text-align:center}
-  .badge{
-    display:inline-flex;gap:8px;align-items:center;font-size:13px;color:#cdd6ff;
-    background:rgba(109,123,255,.16);border:1px solid rgba(109,123,255,.4);
-    padding:6px 14px;border-radius:999px;margin-bottom:18px
-  }
-  h1{font-size:clamp(26px,4.6vw,40px);margin:0 0 10px;letter-spacing:.5px;
-     background:linear-gradient(92deg,#fff,#9db1ff 45%,#22d3ee);-webkit-background-clip:text;
-     background-clip:text;color:transparent}
-  .sub{color:var(--muted);font-size:15px;margin:0 auto;max-width:620px}
-  .panel{
-    background:linear-gradient(180deg,rgba(28,37,80,.92),rgba(20,27,60,.92));
-    border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow);
-    padding:26px; margin:26px 0;
-  }
-  .drop{
-    border:2px dashed rgba(109,123,255,.5); border-radius:16px; padding:40px 20px;
-    text-align:center; cursor:pointer; transition:.2s; background:rgba(109,123,255,.06)
-  }
-  .drop:hover,.drop.over{border-color:var(--accent2);background:rgba(34,211,238,.10);transform:translateY(-2px)}
-  .drop .ico{font-size:40px;display:block;margin-bottom:10px}
-  .drop b{font-size:17px}
-  .drop p{margin:6px 0 0;color:var(--muted);font-size:13px}
-  #file{display:none}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:4px}
-  .stat{background:rgba(255,255,255,.045);border:1px solid var(--line);border-radius:14px;padding:13px 15px}
-  .stat .k{font-size:12px;color:var(--muted);letter-spacing:.4px}
-  .stat .v{font-size:15px;font-weight:600;margin-top:4px;word-break:break-all}
-  .stat .v.hl{color:var(--accent2)}
-  .sec{margin-top:22px}
-  .sec h3{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:8px}
-  .sec h3 span.n{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--accent2));
-    color:#0b1020;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
-  .field{display:flex;gap:10px;flex-wrap:wrap}
-  input[type=text]{
-    flex:1;min-width:220px;background:#0d1430;border:1px solid rgba(109,123,255,.45);color:var(--txt);
-    padding:13px 15px;border-radius:12px;font-size:15px;outline:none;font-family:ui-monospace,SFMono-Regular,Menlo,monospace
-  }
-  input[type=text]:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(34,211,238,.18)}
-  input[type=text].err{border-color:var(--bad);box-shadow:0 0 0 3px rgba(251,113,133,.18)}
-  button{
-    border:0;border-radius:12px;padding:13px 20px;font-size:15px;font-weight:600;cursor:pointer;
-    background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff;transition:.18s;white-space:nowrap
-  }
-  button:hover{filter:brightness(1.1);transform:translateY(-1px)}
-  button:disabled{opacity:.5;cursor:not-allowed;transform:none;filter:none}
-  button.ghost{background:rgba(255,255,255,.08);border:1px solid var(--line);color:var(--txt);font-weight:500}
-  .hint{font-size:13px;margin-top:9px;color:var(--muted);min-height:19px}
-  .hint.ok{color:var(--ok)} .hint.bad{color:var(--bad)}
-  .bar{height:9px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:16px;display:none}
-  .bar.on{display:block}
-  .bar i{display:block;height:100%;width:0;border-radius:99px;
-    background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .25s}
-  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:6px}
-  .step{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:15px}
-  .step b{display:block;font-size:14px;margin-bottom:5px;color:#cfd8ff}
-  .step p{margin:0;font-size:13px;color:var(--muted)}
-  .result{
-    display:none;margin-top:20px;padding:18px;border-radius:16px;
-    background:rgba(52,211,153,.10);border:1px solid rgba(52,211,153,.45)
-  }
-  .result.on{display:block}
-  .result .t{font-weight:700;color:var(--ok);margin-bottom:6px}
-  .result .d{font-size:13px;color:var(--muted);margin-bottom:14px;word-break:break-all}
-  .dl{
-    display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;
-    background:linear-gradient(135deg,#10b981,#22d3ee);color:#06251c;padding:13px 24px;border-radius:12px
-  }
-  .dl:hover{filter:brightness(1.08)}
-  .notes{margin:0;padding-left:20px;color:var(--muted);font-size:13.5px}
-  .notes li{margin:7px 0}
-  footer{
-    margin-top:34px;border-top:1px solid var(--line);
-    background:rgba(7,11,26,.72);backdrop-filter:blur(8px)
-  }
-  .fin{max-width:940px;margin:0 auto;padding:26px 20px 34px;text-align:center}
-  .fin .who{font-size:17px;font-weight:700;letter-spacing:.4px}
-  .fin .who a{color:var(--accent2);text-decoration:none}
-  .fin .who a:hover{text-decoration:underline}
-  .fin .sm{margin-top:8px;font-size:12.5px;color:var(--muted)}
-  .toast{
-    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(140%);
-    background:#10173a;border:1px solid var(--line);color:var(--txt);padding:12px 20px;
-    border-radius:12px;box-shadow:var(--shadow);font-size:14px;z-index:99;transition:.3s;max-width:88vw
-  }
-  .toast.on{transform:translateX(-50%) translateY(0)}
-  .toast.bad{border-color:rgba(251,113,133,.6);color:#ffd7dd}
-  .spin{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.35);
-    border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-3px}
-  @keyframes sp{to{transform:rotate(360deg)}}
-  .tagrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-  .tag{font-size:12px;padding:3px 9px;border-radius:99px;background:rgba(255,255,255,.07);
-    border:1px solid var(--line);color:var(--muted)}
-  .hist-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
-  .hist-tools input{max-width:440px}
-  .hist-count{font-size:13px;color:var(--muted)}
-  .hist-list{display:flex;flex-direction:column;gap:9px}
-  .hrow{display:flex;gap:6px 14px;align-items:baseline;flex-wrap:wrap;
-    background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:13px;padding:11px 15px}
-  .hrow .tm{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
-  .hrow .pk{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px;color:var(--accent2);word-break:break-all}
-  .hrow .pk .old{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(154,166,210,.55)}
-  .hrow .pk .arrow{color:var(--muted);padding:0 5px}
-  .hrow .nm{font-size:13px;color:#cfd8ff;word-break:break-all}
-  .hrow .mt{margin-left:auto;font-size:12.5px;color:var(--muted);white-space:nowrap}
-  .hist-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:16px 0}
-  mark{background:rgba(34,211,238,.30);color:#eaf4ff;border-radius:4px;padding:0 2px}
-  @media (max-width:640px){ .hrow .mt{margin-left:0;width:100%} }
+/* ============================================================
+   主题变量：所有颜色都走变量，切换主题只需换一组值
+   ============================================================ */
+:root{
+  --bg:#070b18; --bg2:#0d1430;
+  --txt:#e9edff; --muted:#9aa6d2; --dim:#7c88b4;
+  --accent:#6d7bff; --accent2:#22d3ee;
+  --ok:#34d399; --bad:#fb7185;
+  --title-a:#ffffff; --title-b:#9db1ff; --title-c:#22d3ee;
+  --panel-1:rgba(28,37,80,.55); --panel-2:rgba(20,27,60,.50);
+  --surface:rgba(255,255,255,.10);
+  --line:rgba(255,255,255,.14); --line-strong:rgba(255,255,255,.32);
+  --inner:rgba(0,0,0,.16);
+  --input-bg:rgba(8,13,34,.55);
+  --chip:rgba(255,255,255,.055);
+  --shadow:0 24px 60px rgba(0,0,0,.45);
+  --glass-shadow:0 18px 48px rgba(0,0,0,.34);
+  --hl:rgba(34,211,238,.30);
+  --glass-blur:18px; --glass-lens:12px; --glass-tint:.10;
+  --glass-strength:1; --glass-enabled:1;
+}
+[data-theme="light"]{
+  --bg:#eef3ff; --bg2:#dfe9ff;
+  --txt:#16224a; --muted:#5d6b96; --dim:#7a88ad;
+  --accent:#3b5bdb; --accent2:#0891b2;
+  --title-a:#152348; --title-b:#3b5bdb; --title-c:#0891b2;
+  --panel-1:rgba(255,255,255,.52); --panel-2:rgba(255,255,255,.38);
+  --surface:rgba(255,255,255,.46);
+  --line:rgba(30,55,120,.16); --line-strong:rgba(255,255,255,.88);
+  --inner:rgba(30,55,120,.10);
+  --input-bg:rgba(255,255,255,.62);
+  --chip:rgba(255,255,255,.52);
+  --shadow:0 24px 55px rgba(40,70,140,.18);
+  --glass-shadow:0 18px 44px rgba(40,70,140,.16);
+  --hl:rgba(8,145,178,.22);
+}
+[data-theme="blue"]{
+  --bg:#041226; --bg2:#0a2a52;
+  --accent:#4dabf7; --accent2:#38d9f0;
+  --title-a:#ffffff; --title-b:#8ed0ff; --title-c:#38d9f0;
+  --panel-1:rgba(12,58,110,.50); --panel-2:rgba(6,34,70,.46);
+  --line:rgba(140,205,255,.20); --line-strong:rgba(180,225,255,.40);
+}
+[data-theme="violet"]{
+  --bg:#0c0718; --bg2:#1d1038;
+  --accent:#a78bfa; --accent2:#f0abfc;
+  --title-a:#ffffff; --title-b:#c4b5fd; --title-c:#f0abfc;
+  --panel-1:rgba(60,36,110,.50); --panel-2:rgba(34,18,66,.48);
+  --line:rgba(200,170,255,.20); --line-strong:rgba(220,195,255,.40);
+}
+[data-theme="teal"]{
+  --bg:#04161a; --bg2:#083038;
+  --accent:#2dd4bf; --accent2:#67e8f9;
+  --title-a:#ffffff; --title-b:#99f6e4; --title-c:#67e8f9;
+  --panel-1:rgba(12,74,80,.48); --panel-2:rgba(6,44,52,.46);
+  --line:rgba(150,240,230,.20); --line-strong:rgba(180,250,245,.40);
+}
+[data-theme="rose"]{
+  --bg:#1a0812; --bg2:#341025;
+  --accent:#fb7185; --accent2:#fda4af;
+  --title-a:#ffffff; --title-b:#fecdd3; --title-c:#fda4af;
+  --panel-1:rgba(96,32,58,.48); --panel-2:rgba(54,16,38,.46);
+  --line:rgba(255,180,200,.20); --line-strong:rgba(255,205,220,.40);
+}
 
-  /* ---------- 磨砂玻璃 Dock 栏：横屏靠左竖排，竖屏底部横排 ---------- */
-  .dock{
-    position:fixed; z-index:90; display:flex; gap:4px;
-    background:rgba(255,255,255,.08);
-    border:1px solid rgba(255,255,255,.18);
-    -webkit-backdrop-filter:blur(24px) saturate(200%) brightness(1.15);
-    backdrop-filter:blur(24px) saturate(200%) brightness(1.15);
-    box-shadow:
-      0 12px 40px rgba(0,0,0,.45),
-      inset 0 1px 0 rgba(255,255,255,.22),
-      inset 0 -1px 0 rgba(0,0,0,.15);
-  }
-  @supports not (backdrop-filter: blur(1px)){
-    .dock{background:rgba(20,27,60,.88)}
-  }
-  .dock-item{
-    display:flex; align-items:center; gap:6px; text-decoration:none;
-    color:#fff; font-size:13px; padding:9px 13px; border-radius:14px;
-    transition:.18s; -webkit-tap-highlight-color:transparent;
-    text-shadow:0 1px 2px rgba(0,0,0,.5)
-  }
-  .dock-item:hover{
-    background:rgba(255,255,255,.18);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.3)
-  }
-  .dock-item:active{
-    background:rgba(34,211,238,.22);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.25)
-  }
-  .dock-item .di-ico{font-size:17px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
-  @media (orientation: landscape){
-    .dock{
-      left:14px; top:50%; transform:translateY(-50%);
-      flex-direction:column; padding:10px 8px; border-radius:22px
-    }
-    .dock-item{flex-direction:column; gap:4px; padding:11px 12px; font-size:12px}
-    .dock-item .di-ico{font-size:19px}
-    body{padding-left:88px}
-  }
-  @media (orientation: portrait){
-    .dock{
-      left:50%; bottom:calc(12px + env(safe-area-inset-bottom)); transform:translateX(-50%);
-      flex-direction:row; padding:8px 10px; border-radius:22px;
-      max-width:calc(100vw - 24px)
-    }
-    body{padding-bottom:104px}
-    .toast{bottom:118px}
-  }
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html{scroll-behavior:smooth}
+html,body{margin:0;padding:0}
+body{
+  font-family:"PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  color:var(--txt); background:var(--bg);
+  min-height:100vh; display:flex; flex-direction:column; line-height:1.6;
+  position:relative; transition:color .3s, background-color .3s;
+}
+a{color:var(--accent2)}
+
+/* ============================================================
+   第一层：背景采样层（Backdrop）
+   文档的 layerBackdrop —— 玻璃只采样这一层，绝不在它的子树里。
+   光斑提供颜色变化，没有颜色变化模糊和折射就看不出来。
+   ============================================================ */
+.bg-layer{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg-image{position:absolute;inset:0;background-size:cover;background-position:center;
+  background-repeat:no-repeat;filter:saturate(1.15)}
+.bg-gradient{position:absolute;inset:0;
+  background:
+    radial-gradient(1100px 620px at 12% -8%, rgba(109,123,255,.30), transparent 60%),
+    radial-gradient(900px 560px at 92% 4%, rgba(34,211,238,.22), transparent 60%),
+    linear-gradient(180deg,var(--bg),var(--bg2) 60%,var(--bg));
+}
+[data-theme="light"] .bg-gradient{
+  background:
+    radial-gradient(1100px 620px at 12% -8%, rgba(90,130,255,.24), transparent 60%),
+    radial-gradient(900px 560px at 92% 4%, rgba(8,145,178,.18), transparent 60%),
+    linear-gradient(180deg,#f7faff,#e6eeff 60%,#dbe6ff);
+}
+.aurora{position:absolute;border-radius:50%;filter:blur(2px);mix-blend-mode:screen;
+  animation:drift 22s ease-in-out infinite alternate}
+[data-theme="light"] .aurora{mix-blend-mode:multiply;opacity:.55}
+.aurora-a{width:380px;height:380px;left:-90px;top:-70px;
+  background:radial-gradient(circle,rgba(109,123,255,.42),transparent 68%)}
+.aurora-b{width:300px;height:300px;right:-60px;top:36%;
+  background:radial-gradient(circle,rgba(138,107,255,.34),transparent 68%);
+  animation-duration:28s;animation-delay:-6s}
+.aurora-c{width:560px;height:560px;left:34%;bottom:-260px;
+  background:radial-gradient(circle,rgba(34,211,238,.30),transparent 68%);
+  animation-duration:32s;animation-delay:-12s}
+@keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(40px,-30px,0) scale(1.12)}}
+.bg-vignette{position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(0,0,0,.28),transparent 22%,transparent 72%,rgba(0,0,0,.42))}
+[data-theme="light"] .bg-vignette{
+  background:linear-gradient(180deg,rgba(255,255,255,.35),transparent 22%,transparent 72%,rgba(255,255,255,.45))}
+
+/* ============================================================
+   第二~四层：液态玻璃
+   blur/vibrancy = backdrop-filter；边缘折射 = ::before 的环带采样 + 轻微放大；
+   表面光学 = 多层内高光、内阴影、红蓝色散与渐变描边。
+   ============================================================ */
+.glass{
+  position:relative;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,var(--glass-tint)),rgba(255,255,255,0) 42%),
+    linear-gradient(180deg,var(--panel-1),var(--panel-2));
+  border:1px solid var(--line);
+  -webkit-backdrop-filter:blur(calc(var(--glass-blur) * var(--glass-strength))) saturate(180%) brightness(1.10);
+  backdrop-filter:blur(calc(var(--glass-blur) * var(--glass-strength))) saturate(180%) brightness(1.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    inset 0 -1px 0 var(--inner),
+    var(--glass-shadow), var(--shadow);
+}
+.glass::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+  padding:var(--glass-lens);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:exclude;
+  background:linear-gradient(135deg,rgba(255,255,255,.32),rgba(255,255,255,.02) 42%,rgba(255,255,255,.16));
+  -webkit-backdrop-filter:blur(calc(var(--glass-lens) * .6 * var(--glass-strength))) saturate(230%) brightness(1.30);
+  backdrop-filter:blur(calc(var(--glass-lens) * .6 * var(--glass-strength))) saturate(230%) brightness(1.30);
+  transform:scale(1.012);
+  opacity:calc(.78 * var(--glass-enabled));
+}
+.glass::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.16),transparent 16%),
+    radial-gradient(130% 60% at 50% -8%,rgba(255,255,255,.20),transparent 62%),
+    linear-gradient(90deg,rgba(255,90,130,.10),transparent 7%,transparent 93%,rgba(80,190,255,.10));
+  box-shadow:
+    inset 1px 0 0 rgba(255,120,155,.16),
+    inset -1px 0 0 rgba(90,205,255,.16),
+    inset 0 1px 0 rgba(255,255,255,.26),
+    inset 0 -1px 0 var(--inner);
+  opacity:calc(.72 * var(--glass-enabled));
+}
+/* 浅色主题：白底上白色高光看不出来，改用淡蓝/淡青边缘表现厚度与色散 */
+[data-theme="light"] .glass::after{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.92),
+    inset 1px 0 0 rgba(90,130,220,.26),
+    inset -1px 0 0 rgba(60,180,220,.24),
+    inset 0 -1px 0 rgba(60,90,160,.14);
+}
+.glass > *{position:relative;z-index:1}
+/* 玻璃关闭 / 浏览器不支持时的降级：退化成普通半透明面板，界面不消失 */
+body.no-glass .glass{-webkit-backdrop-filter:none;backdrop-filter:none}
+body.no-glass .glass::before,body.no-glass .glass::after{display:none}
+@supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){
+  .glass{-webkit-backdrop-filter:none;backdrop-filter:none;
+    background:linear-gradient(180deg,var(--panel-1),var(--panel-2))}
+  .glass::before,.glass::after{display:none}
+}
+
+.wrap{width:100%;max-width:940px;margin:0 auto;padding:0 20px;flex:1;position:relative;z-index:1}
+header{padding:44px 0 10px;text-align:center}
+.badge{
+  display:inline-flex;gap:8px;align-items:center;font-size:13px;color:var(--txt);
+  background:rgba(109,123,255,.16);border:1px solid var(--line-strong);
+  padding:6px 14px;border-radius:999px;margin-bottom:18px;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)
+}
+h1{font-size:clamp(26px,4.6vw,40px);margin:0 0 10px;letter-spacing:.5px;
+   background:linear-gradient(92deg,var(--title-a),var(--title-b) 45%,var(--title-c));
+   -webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--muted);font-size:15px;margin:0 auto;max-width:640px}
+.panel{border-radius:20px;padding:26px;margin:26px 0}
+.drop{
+  border:2px dashed var(--line-strong);border-radius:16px;padding:40px 20px;
+  text-align:center;cursor:pointer;transition:.2s;background:var(--chip)
+}
+.drop:hover,.drop.over{border-color:var(--accent2);background:rgba(34,211,238,.12);transform:translateY(-2px)}
+.drop .ico{font-size:40px;display:block;margin-bottom:10px}
+.drop b{font-size:17px}
+.drop p{margin:6px 0 0;color:var(--muted);font-size:13px}
+#file{display:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:4px}
+.stat{background:var(--chip);border:1px solid var(--line);border-radius:14px;padding:13px 15px}
+.stat .k{font-size:12px;color:var(--muted);letter-spacing:.4px}
+.stat .v{font-size:15px;font-weight:600;margin-top:4px;word-break:break-all}
+.stat .v.hl{color:var(--accent2)}
+.sec{margin-top:22px}
+.sec h3{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:8px}
+.sec h3 span.n{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#0b1020;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none}
+.lbl{display:block;font-size:13px;color:var(--muted);margin:0 0 7px}
+.field{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input[type=text]{
+  flex:1;min-width:220px;background:var(--input-bg);border:1px solid var(--line-strong);color:var(--txt);
+  padding:13px 15px;border-radius:12px;font-size:15px;outline:none;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace
+}
+input[type=text]::placeholder{color:var(--dim)}
+#appLabel{font-family:inherit}
+input[type=text]:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(34,211,238,.18)}
+input[type=text].err{border-color:var(--bad);box-shadow:0 0 0 3px rgba(251,113,133,.18)}
+button{
+  border:0;border-radius:12px;padding:13px 20px;font-size:15px;font-weight:600;cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;transition:.18s;white-space:nowrap
+}
+button:hover{filter:brightness(1.1);transform:translateY(-1px)}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none;filter:none}
+button.ghost{background:var(--chip);border:1px solid var(--line-strong);color:var(--txt);font-weight:500}
+button.mini{padding:7px 12px;font-size:12.5px;border-radius:9px}
+.pressable{transition:transform .34s cubic-bezier(.2,1.4,.4,1),filter .2s}
+.pressable:active{transform:scale(.975)}
+.hint{font-size:13px;margin-top:9px;color:var(--muted);min-height:19px;flex-basis:100%}
+.hint.ok{color:var(--ok)}.hint.bad{color:var(--bad)}
+.bar{height:9px;border-radius:99px;background:var(--chip);overflow:hidden;margin-top:16px;display:none}
+.bar.on{display:block}
+.bar i{display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .25s}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:6px}
+.step{background:var(--chip);border:1px solid var(--line);border-radius:14px;padding:15px}
+.step b{display:block;font-size:14px;margin-bottom:5px;color:var(--txt)}
+.step p{margin:0;font-size:13px;color:var(--muted)}
+.result{display:none;margin-top:20px;padding:18px;border-radius:16px;
+  background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.48)}
+.result.on{display:block}
+.result .t{font-weight:700;color:var(--ok);margin-bottom:6px}
+.result .d{font-size:13px;color:var(--muted);margin-bottom:14px;word-break:break-all}
+.dl{display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;
+  background:linear-gradient(135deg,#10b981,#22d3ee);color:#06251c;padding:13px 24px;border-radius:12px}
+.dl:hover{filter:brightness(1.08)}
+.notes{margin:0;padding-left:20px;color:var(--muted);font-size:13.5px}
+.notes li{margin:7px 0}
+footer{margin-top:34px;border-top:1px solid var(--line);border-radius:0;position:relative;z-index:1}
+.fin{max-width:940px;margin:0 auto;padding:26px 20px 34px;text-align:center}
+.fin .who{font-size:17px;font-weight:700;letter-spacing:.4px}
+.fin .who a{text-decoration:none}
+.fin .who a:hover{text-decoration:underline}
+.fin .sm{margin-top:8px;font-size:12.5px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(140%);
+  color:var(--txt);padding:12px 20px;font-size:14px;z-index:99;
+  transition:.3s;max-width:88vw}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.toast.bad{border-color:rgba(251,113,133,.6);color:var(--bad)}
+.spin{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.35);
+  border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-3px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.tagrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.tag{font-size:12px;padding:3px 9px;border-radius:99px;background:var(--chip);
+  border:1px solid var(--line);color:var(--muted)}
+.hist-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.hist-tools input{max-width:440px}
+.hist-count{font-size:13px;color:var(--muted)}
+.hist-list{display:flex;flex-direction:column;gap:9px}
+.hrow{display:flex;gap:6px 14px;align-items:baseline;flex-wrap:wrap;
+  background:var(--chip);border:1px solid var(--line);border-radius:13px;padding:11px 15px}
+.hrow .tm{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.hrow .pk{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px;color:var(--accent2);word-break:break-all}
+.hrow .pk .old{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--dim)}
+.hrow .pk .arrow{color:var(--muted);padding:0 5px}
+.hrow .nm{font-size:13px;color:var(--txt);word-break:break-all}
+.hrow .mt{margin-left:auto;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.hist-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:16px 0}
+mark{background:var(--hl);color:var(--txt);border-radius:4px;padding:0 2px}
+
+/* ---------- 外观定制 ---------- */
+.look-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.icon-picker{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:48px;
+  border:1px dashed var(--line-strong);border-radius:12px;padding:9px 12px;cursor:pointer;
+  background:var(--chip);transition:.2s}
+.icon-picker:hover{border-color:var(--accent2)}
+.icon-picker img{width:46px;height:46px;border-radius:11px;object-fit:cover;
+  box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.icon-picker span{font-size:13px;color:var(--muted)}
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.swatch{background:transparent;border:2px solid transparent;border-radius:14px;padding:5px;
+  display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;min-width:66px}
+.swatch:hover{transform:none;filter:none;border-color:var(--line-strong)}
+.swatch.on{border-color:var(--accent2)}
+.swatch i{width:42px;height:30px;border-radius:9px;display:block;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 4px 12px rgba(0,0,0,.25)}
+.swatch span{font-size:11.5px;color:var(--muted);font-weight:500}
+.toggle-row{display:flex;align-items:center;gap:10px;font-size:14px;margin-bottom:14px}
+.switch{position:relative;display:inline-block;width:44px;height:25px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.switch span{position:absolute;inset:0;border-radius:99px;background:var(--chip);
+  border:1px solid var(--line-strong);transition:.25s;cursor:pointer}
+.switch span:before{content:'';position:absolute;width:17px;height:17px;left:3px;top:3px;
+  border-radius:50%;background:var(--txt);transition:.25s}
+.switch input:checked + span{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.switch input:checked + span:before{transform:translateX(19px);background:#fff}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px 22px}
+.slider label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:5px}
+.slider label b{color:var(--txt);font-variant-numeric:tabular-nums}
+.slider input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
+
+/* ---------- 磨砂玻璃 Dock：横屏靠左竖排，竖屏底部横排 ---------- */
+.dock{position:fixed;z-index:90;display:flex;gap:4px;
+  background:rgba(255,255,255,.05);border:1px solid var(--line-strong);border-radius:22px;
+  -webkit-backdrop-filter:blur(6px) saturate(190%);backdrop-filter:blur(6px) saturate(190%);
+  box-shadow:0 12px 40px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.24),inset 0 -1px 0 rgba(0,0,0,.14)}
+.dock::after{background:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.28)}
+.dock::before{opacity:calc(.6 * var(--glass-enabled))}
+body.no-glass .dock{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--panel-1)}
+@supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){
+  .dock{background:var(--panel-1)}
+}
+/* 选中胶囊：不采样自己，用更实的白色表面保证可见（对应文档 7.6） */
+.dock > .dock-pill{position:absolute;z-index:0;left:0;top:0;border-radius:16px;
+  background:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.45);
+  -webkit-backdrop-filter:blur(10px) saturate(200%) brightness(1.22);
+  backdrop-filter:blur(10px) saturate(200%) brightness(1.22);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 6px 18px rgba(0,0,0,.26),
+    -1px 0 0 rgba(255,110,150,.28),1px 0 0 rgba(90,200,255,.28);
+  pointer-events:none;opacity:0;
+  transition:transform .44s cubic-bezier(.2,1.25,.35,1),width .28s,height .28s,opacity .25s}
+body.no-glass .dock-pill{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(255,255,255,.30)}
+.dock-item{position:relative;z-index:1;display:flex;align-items:center;gap:6px;text-decoration:none;
+  color:var(--txt);font-size:13px;padding:9px 13px;border-radius:14px;transition:.18s;
+  -webkit-tap-highlight-color:transparent}
+.dock-item:hover{color:var(--txt)}
+.dock-item .di-ico{font-size:17px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
+@media (orientation: landscape){
+  .dock{left:14px;top:50%;transform:translateY(-50%);flex-direction:column;padding:10px 8px}
+  .dock-item{flex-direction:column;gap:4px;padding:11px 12px;font-size:12px}
+  .dock-item .di-ico{font-size:19px}
+  body{padding-left:88px}
+}
+@media (orientation: portrait){
+  .dock{left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);
+    flex-direction:row;padding:8px 10px;max-width:calc(100vw - 24px)}
+  body{padding-bottom:104px}
+  .toast{bottom:118px}
+}
+@media (max-width:640px){.hrow .mt{margin-left:0;width:100%}}
+@media (prefers-reduced-motion:reduce){
+  .aurora{animation:none}.glass::before,.dock > .dock-pill,.pressable{transition:none}
+}
 </style>
 </head>
 <body>
+
+<!-- 背景层：被玻璃采样，玻璃元素一律不放在这里 -->
+<div class="bg-layer" aria-hidden="true">
+  <div class="bg-image" id="bgImage"></div>
+  <div class="bg-gradient"></div>
+  <div class="aurora aurora-a"></div>
+  <div class="aurora aurora-b"></div>
+  <div class="aurora aurora-c"></div>
+  <div class="bg-vignette"></div>
+</div>
 
 <div class="wrap">
   <header id="top">
     <div class="badge">🔧 在线工具 · 无需安装 · 上传即改</div>
     <h1>在线 APK 包名修改器</h1>
-    <p class="sub">自动识别原软件包名，支持自定义新包名；改完自动重新打包、对齐并签名，直接下载安装。</p>
+    <p class="sub">自动识别原软件包名，自定义包名、应用名称与图标；改完自动重新打包、对齐并签名，直接下载安装。</p>
   </header>
 
-  <section class="panel">
+  <section class="panel glass">
     <div class="drop" id="drop">
       <span class="ico">📦</span>
       <b>点击选择 APK 文件，或拖拽到这里</b>
-      <p>改完自动重打包并签名</p>
-      <button class="ghost" id="btnCancelUp" type="button" style="display:none;margin-top:10px">✖ 取消上传</button>
+      <p>改完自动重打包并签名 · 支持断点续传与并行上传</p>
+      <button class="ghost mini pressable" id="btnCancelUp" type="button" style="display:none;margin-top:10px">✖ 取消上传</button>
       <input type="file" id="file" accept=".apk,application/vnd.android.package-archive">
     </div>
 
@@ -218,17 +406,39 @@
       <h3><span class="n">2</span>自定义新包名</h3>
       <div class="field">
         <input type="text" id="pkg" spellcheck="false" autocomplete="off" placeholder="com.example.newapp">
-        <button class="ghost" id="btnReset" type="button">恢复原包名</button>
+        <button class="ghost pressable" id="btnReset" type="button">恢复原包名</button>
       </div>
       <div class="hint" id="pkgHint">包名需至少两段，以字母开头，可包含字母、数字与下划线。</div>
+
+      <h3 style="margin:22px 0 10px;font-size:15px;display:flex;align-items:center;gap:8px">
+        <span class="n">3</span>自定义应用外观<span class="tag">可选，留空则保持原样</span>
+      </h3>
+      <div class="look-grid">
+        <div>
+          <label class="lbl" for="appLabel">应用名称</label>
+          <input type="text" id="appLabel" maxlength="60" spellcheck="false"
+                 placeholder="留空则保持原名称">
+          <div class="hint" id="labelHint">会同步更新桌面图标名与页面标题，最多 60 个字符。</div>
+        </div>
+        <div>
+          <label class="lbl">应用图标</label>
+          <div class="icon-picker" id="iconPicker">
+            <img id="iconPreview" alt="图标预览" hidden>
+            <span id="iconEmpty">点击选择 PNG / JPG / WEBP</span>
+            <button class="ghost mini pressable" id="btnIconClear" type="button" hidden>移除</button>
+            <input type="file" id="iconFile" accept="image/png,image/jpeg,image/webp" hidden>
+          </div>
+          <div class="hint" id="iconHint">会自动按各分辨率重绘并替换启动器图标。</div>
+        </div>
+      </div>
     </div>
 
     <div class="sec" id="goSec" style="display:none">
-      <h3><span class="n">3</span>生成并下载</h3>
+      <h3><span class="n">4</span>生成并下载</h3>
       <div class="field">
-        <button id="btnBuild" type="button">🚀 修改包名并打包 APK</button>
-        <button class="ghost" id="btnAgain" type="button" style="display:none">再改一个</button>
-        <button class="ghost" id="btnCancelBuild" type="button" style="display:none">✖ 取消</button>
+        <button class="pressable" id="btnBuild" type="button">🚀 修改并打包 APK</button>
+        <button class="ghost pressable" id="btnAgain" type="button" style="display:none">再改一个</button>
+        <button class="ghost pressable" id="btnCancelBuild" type="button" style="display:none">✖ 取消</button>
       </div>
       <div class="bar" id="bar"><i id="barFill"></i></div>
       <div class="hint" id="buildHint"></div>
@@ -241,35 +451,75 @@
     </div>
   </section>
 
-  <section class="panel" id="histPanel">
+  <section class="panel glass" id="appearancePanel">
+    <h3 style="margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:10px">
+      🎨 外观设置
+      <span class="tag">仅保存在本机浏览器</span>
+      <button class="ghost mini pressable" id="btnApReset" type="button" style="margin-left:auto">重置</button>
+    </h3>
+    <div class="sec">
+      <label class="lbl">主题颜色</label>
+      <div class="swatches" id="swatches">
+        <button class="swatch" type="button" data-theme="dark"><i style="background:linear-gradient(135deg,#0b1020,#6d7bff)"></i><span>暗夜</span></button>
+        <button class="swatch" type="button" data-theme="light"><i style="background:linear-gradient(135deg,#f7faff,#3b5bdb)"></i><span>白昼</span></button>
+        <button class="swatch" type="button" data-theme="blue"><i style="background:linear-gradient(135deg,#041226,#4dabf7)"></i><span>天蓝</span></button>
+        <button class="swatch" type="button" data-theme="violet"><i style="background:linear-gradient(135deg,#1d1038,#a78bfa)"></i><span>靛紫</span></button>
+        <button class="swatch" type="button" data-theme="teal"><i style="background:linear-gradient(135deg,#083038,#2dd4bf)"></i><span>青碧</span></button>
+        <button class="swatch" type="button" data-theme="rose"><i style="background:linear-gradient(135deg,#341025,#fb7185)"></i><span>樱粉</span></button>
+      </div>
+    </div>
+    <div class="sec">
+      <label class="lbl">自定义背景图（自动压缩到 1600px 以内）</label>
+      <div class="field">
+        <button class="ghost pressable" id="btnBgPick" type="button">选择图片</button>
+        <button class="ghost pressable" id="btnBgClear" type="button">清除</button>
+        <input type="file" id="bgFile" accept="image/*" hidden>
+        <div class="hint" id="bgHint">当前使用内置渐变与极光。</div>
+      </div>
+    </div>
+    <div class="sec">
+      <label class="lbl">液态玻璃</label>
+      <div class="toggle-row">
+        <label class="switch"><input type="checkbox" id="glassOn" checked><span></span></label>
+        <span>启用实时背景采样 · 模糊 · 边缘折射 · 高光色散</span>
+      </div>
+      <div class="sliders">
+        <div class="slider"><label>玻璃强度 <b id="vStrength">1.0</b></label><input type="range" id="gStrength" min="0.5" max="2" step="0.1" value="1"></div>
+        <div class="slider"><label>背景模糊 <b id="vBlur">18px</b></label><input type="range" id="gBlur" min="0" max="40" step="1" value="18"></div>
+        <div class="slider"><label>边缘折射 <b id="vLens">12px</b></label><input type="range" id="gLens" min="0" max="28" step="1" value="12"></div>
+        <div class="slider"><label>表面色 <b id="vTint">0.10</b></label><input type="range" id="gTint" min="0" max="0.30" step="0.01" value="0.10"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel glass" id="histPanel">
     <h3 style="margin:0 0 14px;font-size:15px">🕘 修改历史<span class="tag" style="margin-left:10px">仅自己可见</span></h3>
     <div class="hist-tools">
-      <input type="text" id="histQ" spellcheck="false" autocomplete="off"
-             placeholder="输入软件名…">
+      <input type="text" id="histQ" spellcheck="false" autocomplete="off" placeholder="输入软件名…">
       <span class="hist-count" id="histCount"></span>
     </div>
     <div class="hist-list" id="histList"></div>
-    <div class="hint" style="margin-top:12px">历史仅保存在你自己的浏览器里（最多 100 条），不会上传服务器，其他人看不到；清除浏览器数据会清空历史。</div>
+    <div class="hint" style="margin-top:12px">历史仅保存在你自己的浏览器里（最多 100 条），不会上传服务器；清除浏览器数据会清空历史。</div>
   </section>
 
-  <section class="panel">
+  <section class="panel glass">
     <h3 style="margin:0 0 14px;font-size:15px">使用说明</h3>
     <div class="steps">
       <div class="step"><b>① 自动识别</b><p>解析二进制 AndroidManifest.xml，读出原包名、版本号、应用名与 SDK 级别。</p></div>
-      <div class="step"><b>② 自定义包名</b><p>保留原包名或填入新的包名，格式实时校验，避免打包后无法安装。</p></div>
-      <div class="step"><b>③ 自动打包签名</b><p>重写 manifest → 重打包 → zipalign 对齐 → 使用全新证书签名并校验。</p></div>
+      <div class="step"><b>② 自定义</b><p>改包名、应用名称，或上传自己的图标；格式实时校验，避免打包后无法安装。</p></div>
+      <div class="step"><b>③ 自动打包签名</b><p>重写 manifest → 替换图标 → 重打包 → zipalign 对齐 → 全新证书签名并校验。</p></div>
     </div>
     <ul class="notes" style="margin-top:16px">
       <li>修改包名后，新应用与原应用视为<strong>两个不同的应用</strong>，可同时安装，数据互不相通。</li>
       <li>改包名时会<strong>自动同步改写</strong> ContentProvider authorities、自定义权限名与 sharedUserId，避免与设备上已装的原应用冲突导致「应用未安装」。</li>
+      <li>应用名称通过把 manifest 的 label 改成字面量字符串实现，不影响其他资源；图标按各分辨率原始尺寸重绘替换。使用<strong>矢量图标</strong>或 WebP 动图的 APK，图标替换可能不生效。</li>
       <li>APK 会使用本站证书<strong>重新签名</strong>，因此覆盖安装同名旧版本会失败，请先卸载旧版。</li>
-      <li>若仍提示安装失败：请检查手机系统版本是否 ≥ 应用要求的最低 SDK；部分应用商店渠道的分包 APK 不受支持。</li>
-      <li>请仅修改你拥有合法授权的应用包名；本工具不保存任何上传文件。</li>
+      <li>请仅修改你拥有合法授权的应用；本工具不保存任何上传文件。</li>
     </ul>
   </section>
 </div>
 
-<footer id="about">
+<footer class="glass" id="about">
   <div class="fin">
     <div class="who">开发者：<span id="cfgAuthor">-</span></div>
     <div class="who">联系：<a id="cfgEmail" href="#">-</a></div>
@@ -277,48 +527,271 @@
   </div>
 </footer>
 
-<div class="toast" id="toast"></div>
+<div class="toast glass" id="toast"></div>
 
-<nav class="dock" id="dock" aria-label="快捷导航">
+<nav class="dock glass" id="dock" aria-label="快捷导航">
+  <div class="dock-pill" id="dockPill"></div>
   <a class="dock-item" href="#top"><span class="di-ico">🛠️</span><span class="di-txt">功能</span></a>
-  <a class="dock-item" href="#about"><span class="di-ico">ℹ️</span><span class="di-txt">关于</span></a>
+  <a class="dock-item" href="#appearancePanel"><span class="di-ico">🎨</span><span class="di-txt">外观</span></a>
+  <a class="dock-item" href="#histPanel"><span class="di-ico">🕘</span><span class="di-txt">历史</span></a>
   <a class="dock-item" id="cfgFeedback" href="#"><span class="di-ico">✉️</span><span class="di-txt">反馈</span></a>
 </nav>
 
 <script>
-/* ===== 站点配置：部署到自己的环境时只需修改这里 =====
-   apiBase       后端服务地址（不含结尾斜杠），例如 'https://api.example.com'
-                 留空时先尝试同源 /api，检测不到会提示需要配置
-   author/email  开发者信息；feedbackUrl 可填 GitHub Issues 地址，留空则用邮箱 */
+/* ===== 站点配置 =====
+   apiBase   后端地址，可填字符串或数组（多个后端会按序探活、失败自动切换）。
+             留空表示仅同源 /api。部署到静态托管 + 独立后端时务必填写。
+   author / email / feedbackUrl   开发者与反馈入口 */
 window.APK_CONFIG = {
-  apiBase: '',
+  apiBase: [],
   author: 'Vesper',
-  email: 'whofkzyb@outlook.com',
+  email: '',
   feedbackUrl: 'https://github.com/vesper-666/apk-rename/issues'
 };
 </script>
 <script>
 (function(){
+  'use strict';
   var $ = function(id){ return document.getElementById(id); };
-  var state = { file:null, oldPkg:'', version:'', uploadId:'', busy:false };
+  var state = { file:null, oldPkg:'', version:'', uploadId:'', iconFile:null, busy:false };
 
-  /* ---------- 后端自动选择：同源没有 API（静态托管）时切到隧道后端 ---------- */
-  var CFG = window.APK_CONFIG || {};
-  var apiBase = (CFG.apiBase || '').replace(/\/+$/, '');
-  (function pickApi(){
-    if(apiBase) return;                      // 已显式配置后端地址，直接使用
-    function noBackend(){
-      toast('未检测到后端服务，请在页面顶部 APK_CONFIG.apiBase 中填写后端地址', true);
+  /* ================= 外观：主题 / 背景 / 玻璃参数 ================= */
+  var APPEAR_KEY = 'apkrepack_appearance_v1';
+  var DEFAULT_APPEAR = { theme:'dark', glass:true, strength:1, blur:18, lens:12, tint:0.10, bg:'' };
+  var appear = loadAppear();
+
+  function loadAppear(){
+    try{
+      var a = JSON.parse(localStorage.getItem(APPEAR_KEY) || '{}');
+      var out = {}, k;
+      for(k in DEFAULT_APPEAR) out[k] = (a[k] === undefined ? DEFAULT_APPEAR[k] : a[k]);
+      return out;
+    }catch(e){ return JSON.parse(JSON.stringify(DEFAULT_APPEAR)); }
+  }
+  function saveAppear(){
+    try{ localStorage.setItem(APPEAR_KEY, JSON.stringify(appear)); return true; }
+    catch(e){ return false; }   // 隐私模式或超配额：本次会话仍生效
+  }
+  function applyAppearance(){
+    document.documentElement.setAttribute('data-theme', appear.theme);
+    document.body.classList.toggle('no-glass', !appear.glass);
+    var s = document.documentElement.style;
+    s.setProperty('--glass-strength', appear.strength);
+    s.setProperty('--glass-blur', appear.blur + 'px');
+    s.setProperty('--glass-lens', appear.lens + 'px');
+    s.setProperty('--glass-tint', appear.tint);
+    s.setProperty('--glass-enabled', appear.glass ? 1 : 0);
+    $('bgImage').style.backgroundImage = appear.bg ? 'url("' + appear.bg + '")' : '';
+    $('bgHint').textContent = appear.bg ? '已设置自定义背景图。' : '当前使用内置渐变与极光。';
+    $('glassOn').checked = appear.glass;
+    $('gStrength').value = appear.strength; $('vStrength').textContent = Number(appear.strength).toFixed(1);
+    $('gBlur').value = appear.blur;        $('vBlur').textContent = appear.blur + 'px';
+    $('gLens').value = appear.lens;        $('vLens').textContent = appear.lens + 'px';
+    $('gTint').value = appear.tint;        $('vTint').textContent = Number(appear.tint).toFixed(2);
+    var sw = $('swatches').querySelectorAll('.swatch');
+    for(var i=0;i<sw.length;i++) sw[i].classList.toggle('on', sw[i].getAttribute('data-theme') === appear.theme);
+  }
+  $('swatches').addEventListener('click', function(ev){
+    var b = ev.target.closest ? ev.target.closest('.swatch') : null;
+    if(!b) return;
+    appear.theme = b.getAttribute('data-theme'); saveAppear(); applyAppearance();
+  });
+  $('glassOn').addEventListener('change', function(){ appear.glass = this.checked; saveAppear(); applyAppearance(); });
+  [['gStrength','strength','vStrength',function(v){return Number(v).toFixed(1);}],
+   ['gBlur','blur','vBlur',function(v){return v+'px';}],
+   ['gLens','lens','vLens',function(v){return v+'px';}],
+   ['gTint','tint','vTint',function(v){return Number(v).toFixed(2);}]
+  ].forEach(function(row){
+    $(row[0]).addEventListener('input', function(){
+      appear[row[1]] = Number(this.value); $(row[2]).textContent = row[3](this.value);
+      applyAppearance(); saveAppear();
+    });
+  });
+  $('btnApReset').addEventListener('click', function(){
+    appear = JSON.parse(JSON.stringify(DEFAULT_APPEAR)); saveAppear(); applyAppearance();
+    toast('外观设置已重置');
+  });
+  $('btnBgPick').addEventListener('click', function(){ $('bgFile').click(); });
+  $('btnBgClear').addEventListener('click', function(){
+    appear.bg = ''; saveAppear(); applyAppearance(); toast('已恢复默认背景');
+  });
+  $('bgFile').addEventListener('change', function(){
+    var f = this.files && this.files[0]; this.value = '';
+    if(!f) return;
+    if(!/^image\//.test(f.type)){ toast('请选择图片文件', true); return; }
+    shrinkImage(f, function(dataUrl){
+      appear.bg = dataUrl;
+      var saved = saveAppear(); applyAppearance();
+      if(!saved) $('bgHint').textContent = '图片较大，无法持久化保存（仅本次会话有效）。';
+    });
+  });
+  function shrinkImage(file, cb){
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function(){
+      var max = 1600, w = img.naturalWidth, h = img.naturalHeight;
+      var scale = Math.min(1, max / Math.max(w, h));
+      w = Math.max(1, Math.round(w * scale)); h = Math.max(1, Math.round(h * scale));
+      var c = document.createElement('canvas'); c.width = w; c.height = h;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      try{ cb(c.toDataURL('image/jpeg', 0.82)); }
+      catch(e){ toast('图片处理失败', true); }
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); toast('图片无法读取', true); };
+    img.src = url;
+  }
+  applyAppearance();
+
+  /* ================= Dock：滑动胶囊 ================= */
+  (function initDock(){
+    var dock = $('dock'), pill = $('dockPill');
+    var items = [].slice.call(dock.querySelectorAll('.dock-item'));
+    function move(el){
+      if(!el) return;
+      var d = dock.getBoundingClientRect(), r = el.getBoundingClientRect();
+      pill.style.width = r.width + 'px';
+      pill.style.height = r.height + 'px';
+      pill.style.transform = 'translate(' + (r.left - d.left) + 'px,' + (r.top - d.top) + 'px)';
+      pill.style.opacity = appear.glass ? '1' : '.7';
     }
-    fetch('/api/health').then(function(r){ return r.json(); }).then(function(j){
-      if(!(j && j.ok)) noBackend();
-    }).catch(noBackend);
+    function current(){
+      var h = location.hash;
+      for(var i=0;i<items.length;i++) if(items[i].getAttribute('href') === h) return items[i];
+      return items[0];
+    }
+    items.forEach(function(it){
+      it.addEventListener('mouseenter', function(){ move(it); });
+      it.addEventListener('focus', function(){ move(it); });
+      it.addEventListener('click', function(){ move(it); });
+    });
+    dock.addEventListener('mouseleave', function(){ move(current()); });
+    window.addEventListener('hashchange', function(){ move(current()); });
+    window.addEventListener('resize', function(){ move(current()); });
+    window.addEventListener('load', function(){ setTimeout(function(){ move(current()); }, 60); });
+    setTimeout(function(){ move(current()); }, 60);
   })();
+
+  /* ================= 后端选择：多候选探活 + 故障转移 ================= */
+  var CFG = window.APK_CONFIG || {};
+  var raw = CFG.apiBase;
+  var apiCandidates = (Array.isArray(raw) ? raw.slice() : (raw ? [raw] : []))
+    .map(function(s){ return String(s || '').replace(/\/+$/, ''); });
+  if(!apiCandidates.length) apiCandidates = [''];   // 同源
+  var apiBase = null, failed = {}, probing = null, warned = false;
+  var NO_BACKEND = '未检测到可用的后端服务，请在页面顶部 APK_CONFIG.apiBase 中填写后端地址（可填多个）';
+
+  function ensureApi(){
+    if(apiBase !== null) return Promise.resolve(apiBase);
+    if(probing) return probing;
+    var list = apiCandidates.filter(function(b){ return !failed[b]; });
+    if(!list.length){ failed = {}; list = apiCandidates.slice(); }
+    function tryOne(i){
+      if(i >= list.length) return Promise.reject(new Error(NO_BACKEND));
+      var base = list[i];
+      return rawRequest(base + '/api/health',
+        { method:'GET', json:true, timeout:6000, retries:0 })
+        .then(function(j){
+          if(!j || !j.ok) throw new Error('health not ok');
+          apiBase = base; return base;
+        })
+        .catch(function(){ failed[base] = true; return tryOne(i + 1); });
+    }
+    probing = tryOne(0).then(function(b){ probing = null; return b; },
+                             function(e){ probing = null; throw e; });
+    return probing;
+  }
+  function warnBackend(){
+    if(warned) return; warned = true; toast(NO_BACKEND, true);
+  }
+  function apiRequest(path, opts){
+    opts = opts || {};
+    return ensureApi().then(function(base){
+      return rawRequest(base + path, opts);
+    }).catch(function(err){
+      if(err && err.cancelled) throw err;
+      // 多个后端时，网络/5xx 失败后重新探活并换一个后端再试一次
+      if(err && err.retryable && apiCandidates.length > 1 && apiBase !== null){
+        failed[apiBase] = true; apiBase = null;
+        return ensureApi().then(function(base){ return rawRequest(base + path, opts); });
+      }
+      throw err;
+    }).catch(function(err){
+      if(err && err.message === NO_BACKEND) warnBackend();
+      throw err;
+    });
+  }
+
+  /* ================= 请求层：自动重试 + 可取消 ================= */
+  var curXhrs = [], aborted = false;
+  function abortAll(){
+    aborted = true;
+    curXhrs.slice().forEach(function(x){ try{ x.abort(); }catch(e){} });
+    curXhrs = [];
+  }
+  function rawRequest(url, opts){
+    opts = opts || {};
+    var maxRetry = (opts.retries == null ? 2 : opts.retries), attempt = 0;
+    return new Promise(function(resolve, reject){
+      function run(){
+        if(aborted){ reject(mkErr('已取消', true)); return; }
+        var x = new XMLHttpRequest();
+        curXhrs.push(x);
+        function cleanup(){ var i = curXhrs.indexOf(x); if(i >= 0) curXhrs.splice(i, 1); }
+        x.open(opts.method || (opts.body ? 'POST' : 'GET'), url, true);
+        x.responseType = 'blob';
+        if(opts.timeout) x.timeout = opts.timeout;
+        if(opts.onProgress) x.upload.onprogress = function(e){
+          if(e.lengthComputable) opts.onProgress(e.loaded / e.total);
+        };
+        function later(fn){ setTimeout(fn, 320 * Math.pow(2, attempt)); }
+        function fail(text, status){
+          var msg = text, code = null;
+          try{ var j = JSON.parse(text); msg = j.error || text; code = j.code || null; }catch(e){}
+          var err = mkErr(msg || ('HTTP ' + status), false);
+          err.code = code; err.status = status;
+          err.retryable = (status === 0 || status === 408 || status === 429 || status >= 500);
+          return err;
+        }
+        function done(err){
+          if(err.retryable && attempt < maxRetry){
+            attempt++; cleanup(); later(run); return;
+          }
+          reject(err);
+        }
+        x.onload = function(){
+          cleanup();
+          var p = (x.response && x.response.text) ? x.response.text() : Promise.resolve('');
+          p.then(function(t){
+            if(x.status >= 200 && x.status < 300){
+              if(opts.json){
+                try{ resolve(JSON.parse(t)); }
+                catch(e){ reject(mkErr('服务端返回了无效 JSON', false)); }
+              }else resolve(x);
+              return;
+            }
+            done(fail(t, x.status));
+          }, function(){ done(fail('', x.status)); });
+        };
+        x.onerror = function(){ cleanup(); var e = mkErr('网络错误，请检查连接后重试', false);
+          e.retryable = true; done(e); };
+        x.ontimeout = function(){ cleanup(); var e = mkErr('传输超时，请重试', false);
+          e.retryable = true; done(e); };
+        x.onabort = function(){ cleanup(); reject(mkErr('已取消', true)); };
+        if(opts.body) x.send(opts.body); else x.send();
+      }
+      run();
+    });
+  }
+  function mkErr(msg, cancelled){
+    var e = new Error(msg); e.cancelled = !!cancelled; return e;
+  }
 
   function toast(msg, bad){
     var t = $('toast'); t.textContent = msg;
-    t.className = 'toast on' + (bad ? ' bad' : '');
-    clearTimeout(t._h); t._h = setTimeout(function(){ t.className='toast'; }, 4200);
+    t.className = 'toast glass on' + (bad ? ' bad' : '');
+    clearTimeout(t._h); t._h = setTimeout(function(){ t.className = 'toast glass'; }, 4200);
   }
   function fmtSize(n){
     if(n < 1024) return n + ' B';
@@ -326,8 +799,70 @@ window.APK_CONFIG = {
     if(n < 1073741824) return (n/1048576).toFixed(1) + ' MB';
     return (n/1073741824).toFixed(2) + ' GB';
   }
+  function fmtEta(sec){
+    if(!isFinite(sec) || sec < 0) return '';
+    if(sec < 60) return Math.max(1, Math.round(sec)) + ' 秒';
+    return Math.floor(sec/60) + ' 分 ' + Math.round(sec%60) + ' 秒';
+  }
+  function makeSid(){
+    return (window.crypto && crypto.randomUUID)
+      ? crypto.randomUUID().replace(/-/g, '')
+      : ('s' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12) + 'x');
+  }
 
-  /* ---------- 包名校验 ---------- */
+  /* ================= 并行分片上传 + 断点续传 ================= */
+  var CHUNK_SIZE = 8 * 1024 * 1024;   // 8MB，比原来的 16MB 串行更容易吃满带宽
+  var PARALLEL = 4;
+  function chunkLen(file, i){ return Math.min(CHUNK_SIZE, Math.max(0, file.size - i * CHUNK_SIZE)); }
+  function uploadStream(file, sid, kind, onProgress){
+    var total = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+    var t0 = Date.now(), doneBytes = 0, live = {};
+    function report(){
+      if(!onProgress) return;
+      var extra = 0;
+      for(var k in live) if(live.hasOwnProperty(k)) extra += live[k];
+      var loaded = Math.min(file.size, doneBytes + extra);
+      onProgress(loaded / Math.max(file.size, 1), loaded / Math.max((Date.now() - t0)/1000, .001));
+    }
+    // 断点续传：先问服务端已收到哪些分片
+    return apiRequest('/api/chunk/status?sid=' + encodeURIComponent(sid),
+                      { method:'GET', json:true, retries:1 })
+      .catch(function(){ return { received: [] }; })
+      .then(function(st){
+        var got = {};
+        (st && st.received || []).forEach(function(i){
+          if(i >= 0 && i < total && !got[i]){ got[i] = true; doneBytes += chunkLen(file, i); }
+        });
+        var queue = [];
+        for(var i = 0; i < total; i++) if(!got[i]) queue.push(i);
+        report();
+        if(!queue.length) return;
+        var workers = [], n = Math.min(PARALLEL, queue.length);
+        for(var w = 0; w < n; w++) workers.push(worker());
+        return Promise.all(workers);
+
+        function worker(){
+          return new Promise(function(res, rej){
+            function step(){
+              if(aborted){ rej(mkErr('已取消', true)); return; }
+              var idx = queue.shift();
+              if(idx === undefined){ res(); return; }
+              var blob = file.slice(idx * CHUNK_SIZE, Math.min(file.size, (idx + 1) * CHUNK_SIZE));
+              apiRequest('/api/chunk?sid=' + encodeURIComponent(sid) +
+                         '&idx=' + idx + '&total=' + total + '&kind=' + kind,
+                { method:'POST', body:blob, retries:2,
+                  onProgress:function(f){ live[idx] = f * blob.size; report(); } })
+              .then(function(){
+                delete live[idx]; doneBytes += blob.size; report(); step();
+              }, rej);
+            }
+            step();
+          });
+        }
+      });
+  }
+
+  /* ================= 包名校验 ================= */
   var PKG_RE = /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/;
   function validate(){
     var el = $('pkg'), v = el.value.trim(), hint = $('pkgHint'), btn = $('btnBuild');
@@ -347,9 +882,48 @@ window.APK_CONFIG = {
   $('pkg').addEventListener('input', validate);
   $('btnReset').addEventListener('click', function(){ $('pkg').value = state.oldPkg; validate(); });
 
-  /* ---------- 上传 ---------- */
+  /* ================= 图标选择与预览 ================= */
+  $('iconPicker').addEventListener('click', function(ev){
+    // input.click() 会派发 click 并冒泡回这里，必须挡住，否则递归打开文件框
+    if(ev.target.id === 'btnIconClear' || ev.target.id === 'iconFile') return;
+    $('iconFile').click();
+  });
+  $('btnIconClear').addEventListener('click', function(ev){
+    ev.stopPropagation(); clearIcon();
+  });
+  $('iconFile').addEventListener('change', function(){
+    var f = this.files && this.files[0]; this.value = '';
+    if(!f) return;
+    if(!/\.(png|jpe?g|webp)$/i.test(f.name) && !/^image\/(png|jpeg|webp)$/.test(f.type)){
+      toast('图标仅支持 PNG / JPG / WEBP', true); return;
+    }
+    if(f.size > 8 * 1024 * 1024){ toast('图标请勿超过 8 MB', true); return; }
+    state.iconFile = f;
+    var img = $('iconPreview');
+    if(img.dataset.url) URL.revokeObjectURL(img.dataset.url);
+    var url = URL.createObjectURL(f);
+    img.dataset.url = url; img.src = url; img.hidden = false;
+    $('iconEmpty').hidden = true; $('btnIconClear').hidden = false;
+    $('iconHint').className = 'hint ok';
+    $('iconHint').textContent = f.name + ' · ' + fmtSize(f.size) + ' · 打包时上传';
+  });
+  function clearIcon(){
+    var img = $('iconPreview');
+    if(img.dataset.url){ URL.revokeObjectURL(img.dataset.url); delete img.dataset.url; }
+    img.hidden = true; img.removeAttribute('src');
+    state.iconFile = null;
+    $('iconEmpty').hidden = false; $('btnIconClear').hidden = true;
+    $('iconHint').className = 'hint';
+    $('iconHint').textContent = '会自动按各分辨率重绘并替换启动器图标。';
+  }
+
+  /* ================= 上传 APK ================= */
   var drop = $('drop'), fileInput = $('file');
-  drop.addEventListener('click', function(){ if(!state.busy) fileInput.click(); });
+  drop.addEventListener('click', function(ev){
+    // 同样要挡住 fileInput.click() 冒泡回来造成的递归
+    if(ev.target === fileInput || ev.target.id === 'btnCancelUp') return;
+    if(!state.busy) fileInput.click();
+  });
   fileInput.addEventListener('change', function(){ if(fileInput.files[0]) handle(fileInput.files[0]); });
   ['dragenter','dragover'].forEach(function(e){
     drop.addEventListener(e, function(ev){ ev.preventDefault(); drop.classList.add('over'); });
@@ -362,65 +936,15 @@ window.APK_CONFIG = {
     if(f) handle(f);
   });
 
-  var curXhr = null;  // 当前进行中的请求，供「取消」按钮中断
-  function xhr(method, url, body, onProgress){
-    return new Promise(function(resolve, reject){
-      var x = new XMLHttpRequest();
-      curXhr = x;
-      function settle(){ curXhr = null; }
-      x.open(method, url, true);
-      x.responseType = 'blob';
-      x.upload.onprogress = function(e){ if(onProgress && e.lengthComputable) onProgress(e.loaded/e.total); };
-      x.onload = function(){
-        settle();
-        if(x.status >= 200 && x.status < 300){ resolve(x); return; }
-        x.response.text().then(function(t){
-          var msg = t, code = null;
-          try{ var j = JSON.parse(t); msg = j.error || t; code = j.code || null; }catch(e){}
-          var err = new Error(msg || ('HTTP ' + x.status));
-          err.code = code;
-          reject(err);
-        }, function(){ reject(new Error('HTTP ' + x.status)); });
-      };
-      x.onerror = function(){ settle(); reject(new Error('网络错误，请检查连接后重试')); };
-      x.onabort = function(){ settle(); reject(new Error('已取消')); };
-      x.ontimeout = function(){ settle(); reject(new Error('传输超时，请检查网络后重试')); };
-      if(body) x.send(body); else x.send();
-    });
-  }
-
-  /* ---------- 分片上传：16MB 一片，规避网关对单请求的体积限制 ---------- */
-  var CHUNK_SIZE = 16 * 1024 * 1024;
-  function sendFile(file, onProgress){
-    var sid = (window.crypto && crypto.randomUUID)
-      ? crypto.randomUUID().replace(/-/g, '')
-      : ('s' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12) + 'x');
-    return new Promise(function(resolve, reject){
-      var i = 0;
-      function next(){
-        var start = i * CHUNK_SIZE;
-        if(start >= file.size){ resolve(sid); return; }
-        var blob = file.slice(start, Math.min(start + CHUNK_SIZE, file.size));
-        xhr('POST', apiBase + '/api/chunk?sid=' + sid + '&idx=' + i, blob, function(f){
-          if(onProgress) onProgress(Math.min(1, (start + f * blob.size) / file.size));
-        }).then(function(){ i++; next(); }, reject);
-      }
-      next();
-    });
-  }
-
-  function fmtEta(sec){
-    if(!isFinite(sec) || sec < 0) return '';
-    if(sec < 60) return Math.max(1, Math.round(sec)) + ' 秒';
-    return Math.floor(sec/60) + ' 分 ' + Math.round(sec%60) + ' 秒';
-  }
-
   function reset(){
-    state.file = null; state.oldPkg = ''; state.uploadId = '';
+    abortAll(); aborted = false;
+    state.file = null; state.oldPkg = ''; state.uploadId = ''; state.iconFile = null;
     $('infoSec').style.display='none'; $('editSec').style.display='none'; $('goSec').style.display='none';
     $('result').classList.remove('on'); $('bar').classList.remove('on');
     $('buildHint').textContent=''; $('btnAgain').style.display='none';
     $('btnBuild').disabled = true; fileInput.value='';
+    $('appLabel').value = ''; clearIcon();
+    $('btnCancelUp').style.display = 'none'; $('btnCancelBuild').style.display = 'none';
     drop.querySelector('b').textContent = '点击选择 APK 文件，或拖拽到这里';
   }
   $('btnAgain').addEventListener('click', reset);
@@ -428,166 +952,173 @@ window.APK_CONFIG = {
   function handle(file){
     if(state.busy) return;
     if(!/\.apk$/i.test(file.name)){ toast('请选择 .apk 文件', true); return; }
-    state.busy = true;
+    state.busy = true; aborted = false;
     $('btnCancelUp').style.display = '';
-    var t0 = Date.now();
-    function uploadText(p){
-      var dt = (Date.now() - t0) / 1000;
-      var speed = (p * file.size) / Math.max(dt, 0.001);  // B/s
-      var eta = speed > 0 ? ((1 - p) * file.size) / speed : NaN;
+    function uploadText(p, speed){
       if(p >= 1) return '<span class="spin"></span> 上传完成，正在解析…';
-      var msg = '正在上传 ' + Math.round(p * 100) + '%（' + fmtSize(p * file.size) + ' / ' + fmtSize(file.size) + '）';
-      if(p > 0.03 && isFinite(eta)) msg += ' · 预计还需 ' + fmtEta(eta);
+      var eta = speed > 0 ? ((1 - p) * file.size) / speed : NaN;
+      var msg = '正在并行上传 ' + Math.round(p * 100) + '%（' + fmtSize(p * file.size) + ' / ' + fmtSize(file.size) + '）';
+      if(speed > 0) msg += ' · ' + fmtSize(speed) + '/s';
+      if(p > 0.02 && isFinite(eta)) msg += ' · 预计还需 ' + fmtEta(eta);
       return '<span class="spin"></span> ' + msg;
     }
-    drop.querySelector('b').innerHTML = uploadText(0);
-    sendFile(file, function(frac){
-      drop.querySelector('b').innerHTML = uploadText(frac);
-    }).then(function(sid){
+    drop.querySelector('b').innerHTML = uploadText(0, 0);
+    var sid = makeSid();
+    uploadStream(file, sid, 'apk', function(p, speed){
+      drop.querySelector('b').innerHTML = uploadText(p, speed);
+    }).then(function(){
       drop.querySelector('b').innerHTML = '<span class="spin"></span> 上传完成，正在解析…';
-      return xhr('POST', apiBase + '/api/analyze?sid=' + encodeURIComponent(sid) +
-                 '&name=' + encodeURIComponent(file.name));
-    }).then(function(x){
-      return x.response.text().then(function(t){ return JSON.parse(t); });
+      return apiRequest('/api/analyze?sid=' + encodeURIComponent(sid) +
+                        '&name=' + encodeURIComponent(file.name), { method:'POST', json:true });
     }).then(function(info){
       if(!info.ok) throw new Error(info.error || '解析失败');
       state.file = file; state.oldPkg = info.package; state.uploadId = info.uploadId || '';
       state.version = info.versionName || '';
       $('vOld').textContent = info.package || '-';
-      $('vLabel').textContent = info.label || '（来自资源，未内联）';
+      $('vLabel').textContent = info.label || '（来自资源引用，未内联）';
       $('vVer').textContent = (info.versionName || '-') + '  (code ' + (info.versionCode == null ? '-' : info.versionCode) + ')';
       $('vSdk').textContent = 'min ' + (info.minSdk == null ? '-' : info.minSdk) + ' / target ' + (info.targetSdk == null ? '-' : info.targetSdk);
       $('vSize').textContent = fmtSize(info.size);
       $('vSig').textContent = info.signed ? '已签名（将重新签名）' : '未签名';
       $('tName').textContent = file.name;
-      $('infoSec').style.display='block';
-      $('editSec').style.display='block';
-      $('goSec').style.display='block';
-      $('pkg').value = info.package;
-      validate();
+      $('appLabel').value = '';
+      $('labelHint').textContent = info.label
+        ? '原名称：' + info.label + '（留空则保持不变）'
+        : '原名称来自资源引用；填写后会直接写入 manifest。';
+      if(!info.iconCount){
+        $('iconHint').className = 'hint bad';
+        $('iconHint').textContent = '未发现可替换的位图图标（可能是矢量图标），自定义图标可能不生效。';
+      }
+      $('infoSec').style.display='block'; $('editSec').style.display='block'; $('goSec').style.display='block';
+      $('pkg').value = info.package; validate();
       drop.querySelector('b').textContent = '已解析：' + file.name + '（点击可重新选择）';
       $('btnCancelUp').style.display = 'none';
       state.busy = false;
     }).catch(function(err){
       $('btnCancelUp').style.display = 'none';
-      if(err.message !== '已取消') toast(err.message, true);
+      if(!err.cancelled && err.message !== '已取消') toast(err.message, true);
       drop.querySelector('b').textContent = '点击选择 APK 文件，或拖拽到这里';
-      state.busy = false;
+      state.busy = false; aborted = false;
     });
   }
+  $('btnCancelUp').addEventListener('click', function(ev){ ev.stopPropagation(); abortAll(); });
+  $('btnCancelBuild').addEventListener('click', function(){ abortAll(); });
 
-  /* ---------- 取消上传 / 取消打包 ---------- */
-  $('btnCancelUp').addEventListener('click', function(ev){
-    ev.stopPropagation();  // 不要触发外层 drop 的选文件点击
-    if(curXhr) curXhr.abort();
-  });
-  $('btnCancelBuild').addEventListener('click', function(){
-    if(curXhr) curXhr.abort();
-  });
-
-  /* ---------- 打包 ---------- */
+  /* ================= 打包 ================= */
   $('btnBuild').addEventListener('click', function(){
     if(state.busy || !state.file) return;
     var pkg = $('pkg').value.trim();
     if(!PKG_RE.test(pkg)){ validate(); return; }
+    var label = $('appLabel').value.trim();
+    var iconFile = state.iconFile;
 
-    state.busy = true;
+    state.busy = true; aborted = false;
     $('btnBuild').disabled = true;
     $('btnCancelBuild').style.display = '';
     $('result').classList.remove('on');
-    $('bar').classList.add('on');
-    $('barFill').style.width = '0%';
-    var hint = $('buildHint'); hint.className='hint';
-
-    var base = apiBase + '/api/build?package=' + encodeURIComponent(pkg) + '&name=' + encodeURIComponent(state.file.name);
-    var useCache = !!state.uploadId;
-
-    var t0 = Date.now(), done = false;
-    function busyText(){
+    $('bar').classList.add('on'); $('barFill').style.width = '0%';
+    var hint = $('buildHint'); hint.className = 'hint';
+    var t0 = Date.now(), lastPhase = '';
+    function busyText(phase){
+      lastPhase = phase;
       var sec = Math.round((Date.now() - t0) / 1000);
-      var phase = useCache
-        ? '服务端重打包并签名中'   // 已有暂存，无需上传
-        : '上传并打包中';
-      return '<span class="spin"></span> ' + phase + '… 已用时 ' + sec + ' 秒（大文件通常 20–60 秒）';
+      return '<span class="spin"></span> ' + phase + '… 已用时 ' + sec + ' 秒';
     }
-    var timer = setInterval(function(){ hint.innerHTML = busyText(); }, 1000);
-    hint.innerHTML = busyText();
+    function setProgress(p, text){
+      $('barFill').style.width = (Math.max(0, Math.min(100, p)) * 100).toFixed(0) + '%';
+      if(text) hint.innerHTML = text;
+    }
+    var timer = setInterval(function(){
+      if(lastPhase && lastPhase.indexOf('上传') < 0) hint.innerHTML = busyText(lastPhase);
+    }, 1000);
+    hint.innerHTML = busyText('准备上传');
 
-    function uploadWithProgress(){
-      $('barFill').style.width = '0%';
-      return sendFile(state.file, function(frac){
-        var pct = Math.max(0.03, Math.min(0.4, frac));
-        $('barFill').style.width = (pct*100).toFixed(0) + '%';
-        hint.innerHTML = '<span class="spin"></span> 上传文件 ' + Math.round(frac*100) + '% …';
-      }).then(function(sid){
-        return xhr('POST', apiBase + '/api/analyze?sid=' + encodeURIComponent(sid) +
-                   '&name=' + encodeURIComponent(state.file.name));
-      }).then(function(x){
-        return x.response.text().then(function(t){
-          var info = JSON.parse(t);
-          if(!info.ok) throw new Error(info.error || '解析失败');
-          state.uploadId = info.uploadId || '';
-          useCache = true;
-        });
+    function prepareApk(){
+      if(state.uploadId) return Promise.resolve();
+      var sid = makeSid();
+      return uploadStream(state.file, sid, 'apk', function(p, speed){
+        setProgress(p * 0.4, '<span class="spin"></span> 并行上传 APK ' +
+          Math.round(p*100) + '% · ' + fmtSize(speed) + '/s');
+      }).then(function(){
+        return apiRequest('/api/analyze?sid=' + encodeURIComponent(sid) +
+                          '&name=' + encodeURIComponent(state.file.name),
+                          { method:'POST', json:true });
+      }).then(function(info){
+        if(!info.ok) throw new Error(info.error || '解析失败');
+        state.uploadId = info.uploadId || '';
       });
     }
-
-    var req = (useCache ? Promise.resolve() : uploadWithProgress()).then(function(){
-      return xhr('POST', base + '&upload_id=' + encodeURIComponent(state.uploadId));
-    }).catch(function(err){
-      // 暂存过期（服务重启/超时）→ 重新分片上传再打包
-      if(err.code === 'expired'){
+    function prepareIcon(){
+      if(!iconFile) return Promise.resolve('');
+      var sid = makeSid();
+      return uploadStream(iconFile, sid, 'icon', function(p){
+        setProgress(0.4 + p * 0.05, '<span class="spin"></span> 上传图标 ' + Math.round(p*100) + '% …');
+      }).then(function(){ return sid; });
+    }
+    function runBuild(iconSid){
+      var url = '/api/build?package=' + encodeURIComponent(pkg) +
+                '&name=' + encodeURIComponent(state.file.name) +
+                '&label=' + encodeURIComponent(label) +
+                '&upload_id=' + encodeURIComponent(state.uploadId) +
+                (iconSid ? '&icon_sid=' + encodeURIComponent(iconSid) : '');
+      hint.innerHTML = busyText('服务端重打包、对齐并签名');
+      setProgress(0.45);
+      return apiRequest(url, { method:'POST', retries:1 });
+    }
+    function attempt(){
+      return prepareApk().then(prepareIcon).then(runBuild);
+    }
+    attempt().catch(function(err){
+      if(err && err.code === 'expired'){
         state.uploadId = '';
-        return uploadWithProgress().then(function(){
-          return xhr('POST', base + '&upload_id=' + encodeURIComponent(state.uploadId));
-        });
+        hint.innerHTML = busyText('暂存已过期，正在重新上传');
+        return attempt();
       }
       throw err;
-    });
-
-    req.then(function(x){
-      done = true; clearInterval(timer);
-      $('barFill').style.width = '100%';
+    }).then(function(x){
+      clearInterval(timer);
       var blob = x.response;
       if(!blob || blob.size < 1024) throw new Error('生成的文件异常，请重试');
+      setProgress(1);
       var cd = x.getResponseHeader('Content-Disposition') || '';
       var fname = state.file.name.replace(/\.apk$/i, '') + '-' + pkg + '.apk';
       var m = /filename\*=UTF-8''([^;]+)/i.exec(cd);
       if(m){ try{ fname = decodeURIComponent(m[1]); }catch(e){} }
       var old = $('dl').href;
       if(old && old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
-      var a = URL.createObjectURL(blob);
-      $('dl').href = a; $('dl').setAttribute('download', fname);
+      $('dl').href = URL.createObjectURL(blob);
+      $('dl').setAttribute('download', fname);
       $('resName').textContent = fname + ' · ' + fmtSize(blob.size);
       $('result').classList.add('on');
+      var replaced = x.getResponseHeader('X-Icon-Replaced');
+      var extra = [];
+      if(label) extra.push('应用名已改为「' + label + '」');
+      if(iconFile) extra.push(replaced && replaced !== '0'
+        ? '图标已替换 ' + replaced + ' 个资源' : '该 APK 无可替换的位图图标，图标未生效');
       hint.className = 'hint ok';
-      hint.textContent = '完成！原包名 ' + state.oldPkg + ' 已改为 ' + pkg + '。';
+      hint.textContent = '完成！包名 ' + state.oldPkg + ' → ' + pkg + (extra.length ? '；' + extra.join('；') : '') + '。';
       $('btnAgain').style.display = '';
       $('btnCancelBuild').style.display = 'none';
-      state.busy = false;
-      $('btnBuild').disabled = false;
+      state.busy = false; $('btnBuild').disabled = false;
       $('result').scrollIntoView({behavior:'smooth', block:'center'});
-      addHist({ time: Math.floor(Date.now() / 1000), name: state.file.name,
-                old: state.oldPkg, new: pkg, ver: state.version, size: blob.size });
+      addHist({ time: Math.floor(Date.now()/1000), name: state.file.name,
+                old: state.oldPkg, 'new': pkg, ver: state.version, size: blob.size,
+                label: label, icon: !!iconFile });
     }).catch(function(err){
-      if(done) return;
       clearInterval(timer);
       $('bar').classList.remove('on');
       $('btnCancelBuild').style.display = 'none';
-      state.busy = false;
-      $('btnBuild').disabled = false;
-      if(err.message === '已取消'){
-        hint.className = 'hint';
-        hint.textContent = '已取消。可以重新点击打包。';
-        return;
+      state.busy = false; $('btnBuild').disabled = false; aborted = false;
+      if(err && (err.cancelled || err.message === '已取消')){
+        hint.className = 'hint'; hint.textContent = '已取消。可以重新点击打包。'; return;
       }
-      hint.className = 'hint bad';
-      hint.textContent = '失败：' + err.message;
-      toast(err.message, true);
+      var msg = err && err.message ? err.message : '未知错误';
+      hint.className = 'hint bad'; hint.textContent = '失败：' + msg;
+      toast(msg, true);
     });
   });
 
-  /* ---------- 修改历史（私密：仅存于本浏览器 localStorage） ---------- */
+  /* ================= 修改历史（本地 localStorage） ================= */
   var HIST_KEY = 'apkrepack_history_v1', HIST_MAX = 100;
   function getHist(){
     try{
@@ -600,7 +1131,7 @@ window.APK_CONFIG = {
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
   }
-  function hi(s, q){  // 转义并高亮搜索命中
+  function hi(s, q){
     var e = esc(s);
     if(!q) return e;
     var le = e.toLowerCase(), lq = q.toLowerCase(), out = '', i = 0;
@@ -614,7 +1145,7 @@ window.APK_CONFIG = {
   }
   function fmtTime(ts){
     var d = new Date(ts * 1000), p = function(n){ return (n < 10 ? '0' : '') + n; };
-    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' +
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' +
            p(d.getHours()) + ':' + p(d.getMinutes());
   }
   function renderHist(){
@@ -625,48 +1156,49 @@ window.APK_CONFIG = {
       items = items.filter(function(e){
         return (e.name || '').toLowerCase().indexOf(ql) >= 0 ||
                (e.old || '').toLowerCase().indexOf(ql) >= 0 ||
-               (e.new || '').toLowerCase().indexOf(ql) >= 0;
+               (e['new'] || '').toLowerCase().indexOf(ql) >= 0 ||
+               (e.label || '').toLowerCase().indexOf(ql) >= 0;
       });
     }
     $('histCount').textContent = items.length ? ('共 ' + items.length + ' 条') : '';
     if(!items.length){
       box.innerHTML = '<div class="hist-empty">' + (q
-        ? '没有匹配“' + esc(q) + '”的记录'
-        : '还没有记录，去改第一个包名吧') + '</div>';
+        ? '没有匹配“' + esc(q) + '”的记录' : '还没有记录，去改第一个包名吧') + '</div>';
       return;
     }
     box.innerHTML = items.map(function(e){
       return '<div class="hrow">' +
         '<span class="tm">' + fmtTime(e.time) + '</span>' +
         '<span class="pk"><span class="old">' + hi(e.old, q) + '</span>' +
-        '<span class="arrow">→</span>' + hi(e.new, q) + '</span>' +
+        '<span class="arrow">→</span>' + hi(e['new'], q) + '</span>' +
         '<span class="nm">' + hi(e.name, q) + '</span>' +
+        (e.label ? '<span class="tag">' + hi(e.label, q) + (e.icon ? ' · 换图标' : '') + '</span>' : '') +
         '<span class="mt">' + esc(e.ver || 'v?') + ' · ' + fmtSize(e.size || 0) + '</span>' +
       '</div>';
     }).join('');
   }
   function addHist(entry){
-    var list = getHist();
-    list.unshift(entry);
-    try{
-      localStorage.setItem(HIST_KEY, JSON.stringify(list.slice(0, HIST_MAX)));
-    }catch(e){ /* 隐私模式等场景存不进就跳过 */ }
+    var list = getHist(); list.unshift(entry);
+    try{ localStorage.setItem(HIST_KEY, JSON.stringify(list.slice(0, HIST_MAX))); }
+    catch(e){}
     renderHist();
   }
   $('histQ').addEventListener('input', renderHist);
   renderHist();
 
-  /* 站点信息统一由配置注入，避免个人信息散落在模板各处 */
+  /* ================= 站点信息由配置注入 ================= */
   (function applyConfig(){
     var c = window.APK_CONFIG || {};
     if(c.author) $('cfgAuthor').textContent = c.author;
-    var mail = c.email || '';
-    var fb = c.feedbackUrl || (mail ? 'mailto:' + mail : '#');
+    var mail = c.email || '', fb = c.feedbackUrl || (mail ? 'mailto:' + mail : '#');
     var e = $('cfgEmail');
     if(mail){ e.textContent = mail; e.href = 'mailto:' + mail; }
     else { e.textContent = '见项目仓库'; e.href = fb; }
     $('cfgFeedback').href = fb;
   })();
+
+  // 页面加载即探活一次，尽早提示后端未配置（失败只提示一次）
+  ensureApi().catch(function(){ warnBackend(); });
 })();
 </script>
 </body>

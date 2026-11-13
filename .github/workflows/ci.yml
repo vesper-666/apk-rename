@@ -16,7 +16,7 @@ jobs:
           python-version: '3.11'
 
       - name: 语法检查
-        run: python -m py_compile backend/server.py backend/axml.py
+        run: python -m py_compile backend/server.py backend/axml.py backend/assets.py
 
       - name: 构建 Docker 镜像
         run: docker build -f backend/Dockerfile -t apk-rename:ci backend
