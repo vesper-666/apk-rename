@@ -23,3 +23,8 @@ __pycache__/
 
 # ModelScope 创空间部署配置
 ms_deploy.json
+
+# 部署包（含大 jar 与站点专属配置，不进开源仓库）
+部署包/
+①*.zip
+②*.zip

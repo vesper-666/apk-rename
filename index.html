@@ -354,6 +354,8 @@ body.look-open .toast{opacity:0;visibility:hidden}
   0%,100%{box-shadow:var(--glass-shadow),var(--shadow)}
   30%{box-shadow:0 0 0 3px rgba(34,211,238,.55),var(--glass-shadow),var(--shadow)}
 }
+.look-pop .sec.flash{animation:flashSec 1.2s ease;border-radius:12px}
+@keyframes flashSec{0%,100%{background:transparent}30%{background:rgba(34,211,238,.10)}}
 @media (orientation: landscape){
   .look-pop{left:104px;top:50%;transform:translate(-10px,-50%) scale(.97)}
   .look-pop.on{transform:translate(0,-50%) scale(1)}
@@ -539,11 +541,25 @@ body.no-glass .dock-pill{-webkit-backdrop-filter:none;backdrop-filter:none;backg
   <section class="look-pop glass" id="appearancePanel" role="dialog" aria-modal="true"
            aria-label="外观设置" aria-hidden="true">
     <div class="lp-head">
-      🎨 外观设置
+      🎨 外观与设置
       <span class="tag">仅保存在本机浏览器</span>
       <button class="ghost mini pressable lp-close" id="btnLookClose" type="button" aria-label="关闭">✖ 关闭</button>
     </div>
-    <p class="lp-tip">主题、背景图与液态玻璃都在这里；应用名称与图标在主面板第 ③ 步，或点 Dock 的「📱 改应用」快速定位。</p>
+    <p class="lp-tip">主题、背景图、液态玻璃与后端地址都在这里；应用名称与图标在主面板第 ③ 步，或点 Dock 的「📱 改应用」快速定位。</p>
+
+    <div class="sec" id="backendSec">
+      <label class="lbl">🔌 后端服务（连不上时把服务网址粘到这里）</label>
+      <div class="field">
+        <input type="text" id="backendUrl" inputmode="url" spellcheck="false"
+               placeholder="https://你的后端地址" style="flex:1;min-width:170px">
+        <button class="ghost pressable" id="btnBackendSave" type="button">保存并连接</button>
+      </div>
+      <div class="hint" id="backendHint">正在检测…</div>
+      <div class="field" style="margin-top:6px">
+        <button class="ghost mini pressable" id="btnBackendReset" type="button">↺ 恢复默认地址</button>
+        <span class="hint" style="flex-basis:auto">只保存在这台设备的浏览器里</span>
+      </div>
+    </div>
 
     <div class="sec">
       <label class="lbl">主题颜色</label>
@@ -601,17 +617,19 @@ body.no-glass .dock-pill{-webkit-backdrop-filter:none;backdrop-filter:none;backg
   <button class="dock-item" id="dockApp" type="button" title="自定义应用名称与图标"><span class="di-ico">📱</span><span class="di-txt">改应用</span></button>
   <button class="dock-item" id="dockLook" type="button" title="主题 / 背景图 / 液态玻璃" aria-expanded="false" aria-controls="appearancePanel"><span class="di-ico">🎨</span><span class="di-txt">外观</span></button>
   <button class="dock-item" id="dockTheme" type="button" title="一键切换主题"><span class="di-ico">🌓</span><span class="di-txt">主题</span></button>
+  <button class="dock-item" id="dockBackend" type="button" title="设置后端服务地址"><span class="di-ico">⚙️</span><span class="di-txt">后端</span></button>
   <a class="dock-item" href="#histPanel"><span class="di-ico">🕘</span><span class="di-txt">历史</span></a>
   <a class="dock-item" id="cfgFeedback" href="#"><span class="di-ico">✉️</span><span class="di-txt">反馈</span></a>
 </nav>
 
 <script>
 /* ===== 站点配置 =====
-   apiBase   后端地址，可填字符串或数组（多个后端会按序探活、失败自动切换）。
-             留空表示仅同源 /api。部署到静态托管 + 独立后端时务必填写。
+   apiBase   后端候选地址，按序探活、失败自动切换。
+             '' = 先试同源 /api（后端自带页面时用），第二项是创空间地址（静态托管时用）。
+             一般不用手改：页面 Dock 的「⚙️ 后端」里粘一次网址即可，浏览器会记住并优先使用。
    author / email / feedbackUrl   开发者与反馈入口 */
 window.APK_CONFIG = {
-  apiBase: [],
+  apiBase: ['', 'https://vesper123-apk-rename.ms.show'],
   author: 'Vesper',
   email: '',
   feedbackUrl: 'https://github.com/vesper-666/apk-rename/issues'
@@ -770,8 +788,18 @@ window.APK_CONFIG = {
     });
     // 点导航类入口时收起浮层；「主题」是快捷调节，保持浮层打开以便实时看效果
     [].slice.call($('dock').querySelectorAll('.dock-item')).forEach(function(it){
-      if(it === btnLook || it === btnTheme) return;
+      if(it === btnLook || it === btnTheme || it.id === 'dockBackend') return;
       it.addEventListener('click', function(){ if(isOpen()) setOpen(false); });
+    });
+
+    $('dockBackend').addEventListener('click', function(){
+      setOpen(true);
+      var sec = $('backendSec');
+      if(sec){
+        sec.scrollIntoView({block:'nearest'});
+        sec.classList.remove('flash'); void sec.offsetWidth; sec.classList.add('flash');
+      }
+      try{ $('backendUrl').focus({preventScroll:true}); }catch(e){}
     });
 
     function syncThemeBtn(){
@@ -811,12 +839,25 @@ window.APK_CONFIG = {
 
   /* ================= 后端选择：多候选探活 + 故障转移 ================= */
   var CFG = window.APK_CONFIG || {};
-  var raw = CFG.apiBase;
-  var apiCandidates = (Array.isArray(raw) ? raw.slice() : (raw ? [raw] : []))
-    .map(function(s){ return String(s || '').replace(/\/+$/, ''); });
-  if(!apiCandidates.length) apiCandidates = [''];   // 同源
+  var BACKEND_KEY = 'apkrepack_backend_v1';
+  function normBase(s){
+    return String(s || '').trim().replace(/\/+$/, '').replace(/\/api\/?$/, '');
+  }
+  function savedBackend(){
+    try{ return localStorage.getItem(BACKEND_KEY) || ''; }catch(e){ return ''; }
+  }
+  function buildCandidates(){
+    var raw = CFG.apiBase;
+    var list = (Array.isArray(raw) ? raw.slice() : (raw ? [raw] : [])).map(normBase);
+    var custom = normBase(savedBackend());
+    if(custom) list.unshift(custom);              // 用户填的地址优先
+    list = list.filter(function(v, i){ return list.indexOf(v) === i; });  // 保留 '' 作为同源候选
+    if(!list.length) list = [''];                 // 留空 = 同源
+    return list;
+  }
+  var apiCandidates = buildCandidates();
   var apiBase = null, failed = {}, probing = null, warned = false;
-  var NO_BACKEND = '未检测到可用的后端服务，请在页面顶部 APK_CONFIG.apiBase 中填写后端地址（可填多个）';
+  var NO_BACKEND = '还没连上后端：请点 Dock 的「⚙️ 后端」，把服务网址粘进去保存';
 
   function ensureApi(){
     if(apiBase !== null) return Promise.resolve(apiBase);
@@ -840,6 +881,30 @@ window.APK_CONFIG = {
   }
   function warnBackend(){
     if(warned) return; warned = true; toast(NO_BACKEND, true);
+  }
+  /* 由「⚙️ 后端」面板调用：保存地址 → 重新探活 → 反馈结果 */
+  function applyBackend(url, quiet){
+    var v = normBase(url);
+    // 填了地址就先单独验证：避免「看似连上，其实悄悄回退到默认后端」的误导
+    var probe = v
+      ? rawRequest(v + '/api/health', {method:'GET', json:true, timeout:6000, retries:0})
+          .then(function(j){ if(!j || !j.ok) throw new Error('health not ok'); })
+      : Promise.resolve();
+    return probe.then(function(){
+      try{
+        if(v) localStorage.setItem(BACKEND_KEY, v);
+        else localStorage.removeItem(BACKEND_KEY);
+      }catch(e){}
+      apiCandidates = buildCandidates();
+      apiBase = null; failed = {}; probing = null; warned = false;
+      return ensureApi().then(function(base){
+        if(!quiet) toast('已连接后端：' + (base || '同源 /api'));
+        return base;
+      });
+    }).catch(function(err){
+      if(!quiet) toast('连不上「' + (v || '默认地址') + '」。请确认服务已启动、网址以 https:// 开头，且末尾不要带 /api', true);
+      throw err;
+    });
   }
   function apiRequest(path, opts){
     opts = opts || {};
@@ -1331,6 +1396,32 @@ window.APK_CONFIG = {
     if(mail){ e.textContent = mail; e.href = 'mailto:' + mail; }
     else { e.textContent = '见项目仓库'; e.href = fb; }
     $('cfgFeedback').href = fb;
+  })();
+
+  /* ===== 「⚙️ 后端」面板：不用改代码，粘网址即可 ===== */
+  (function bindBackendPanel(){
+    var inp = $('backendUrl'), hint = $('backendHint');
+    function fill(){
+      var saved = savedBackend();
+      var def = '';
+      if(CFG.apiBase && CFG.apiBase.length){
+        for(var i=0;i<CFG.apiBase.length;i++) if(CFG.apiBase[i]){ def = CFG.apiBase[i]; break; }
+      }
+      inp.value = saved || def;
+      var cur = apiBase === null ? '正在检测…' : (apiBase || '同源 /api');
+      hint.textContent = '当前连接：' + cur + (saved ? '（你填的地址已保存）' : '（默认地址）');
+    }
+    fill();
+    $('btnBackendSave').addEventListener('click', function(){
+      applyBackend(inp.value).then(fill).catch(function(){ fill(); });
+    });
+    inp.addEventListener('keydown', function(ev){
+      if(ev.key === 'Enter'){ ev.preventDefault(); $('btnBackendSave').click(); }
+    });
+    $('btnBackendReset').addEventListener('click', function(){
+      applyBackend('').then(fill).catch(function(){ fill(); });
+    });
+    ensureApi().then(fill).catch(function(){ fill(); });
   })();
 
   // 页面加载即探活一次，尽早提示后端未配置（失败只提示一次）

@@ -57,21 +57,25 @@ python3 server.py          # 默认监听 8788 端口
 
 ## 前端部署
 
-把根目录 `index.html` 传到 Netlify / GitHub Pages / 任意静态托管，然后编辑文件顶部的配置：
+把根目录 `index.html` 传到 Netlify / GitHub Pages / 任意静态托管即可。
+
+**不用改代码**：页面 Dock 的「⚙️ 后端」里粘贴后端网址并点「保存并连接」，会先探活、通过后才保存到本机浏览器（localStorage），刷新后仍生效；填错地址会明确报错且不保存。「↺ 恢复默认地址」可清除。临时换域名或切换多后端时用这个最方便。
+
+需要写死在代码里时，编辑文件顶部的配置：
 
 ```js
 window.APK_CONFIG = {
-  // 可填字符串，也可填数组：按顺序探活，失败自动切换到下一个后端
-  apiBase: ['https://主后端地址', 'https://备用后端地址'],
+  // 按顺序探活，失败自动切换到下一个；第一项 '' 表示先试同源 /api
+  apiBase: ['', 'https://主后端地址', 'https://备用后端地址'],
   author: 'Vesper',
   email: '',
   feedbackUrl: 'https://github.com/vesper-666/apk-rename/issues'
 };
 ```
 
-`apiBase` 留空（或 `[]`）时前端只尝试同源 `/api`，检测不到会给出明确提示。若前后端同源，直接用后端自带的 `backend/static/index.html` 即可，无需配置。
+前后端同源时直接用后端自带的 `backend/static/index.html` 即可，候选里的 `''` 会命中，无需任何配置。
 
-> 部署时请把 `apiBase` 换成你的后端地址，并按需要调整联系邮箱与反馈链接。
+> 仓库另附 `部署包/`：`①创空间-上传这个.zip` 是 ModelScope Docker 创空间的完整后端（含同源页面），`②网站页面-上传这个.zip` 是静态托管用的前端，步骤见 `部署包/看这里.md`。两者不在 git 跟踪范围内，避免把 3 MB 的 jar 与站点专属配置带进开源仓库。
 
 ## 环境变量
 
