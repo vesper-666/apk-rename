@@ -26,9 +26,14 @@ import assets
 import axml
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
+# 支持两种布局：标准布局把页面放 static/、工具放 tools/；
+# 单目录布局（某些托管平台只能平铺上传文件）时全部与源码同层。
 STATIC = os.path.join(ROOT, 'static')
-
-TOOLS_DIR = os.environ.get('APK_TOOLS_DIR', os.path.join(ROOT, 'tools'))
+if not os.path.isdir(STATIC):
+    STATIC = ROOT
+_LOCAL_TOOLS = os.path.join(ROOT, 'tools')
+TOOLS_DIR = os.environ.get(
+    'APK_TOOLS_DIR', _LOCAL_TOOLS if os.path.isdir(_LOCAL_TOOLS) else ROOT)
 UBER_SIGNER = os.environ.get('APK_UBER_SIGNER', os.path.join(TOOLS_DIR, 'uber-apk-signer.jar'))
 # 签名证书属于私钥，绝不随源码分发：首次启动自动生成到运行时目录，
 # 密码随机生成并保存在同目录的 .keystore_pass（已被 .gitignore 排除）。
