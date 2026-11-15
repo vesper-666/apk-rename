@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>在线 APK 包名修改器 · 自定义应用名与图标 · 一键打包下载</title>
 <meta name="description" content="在线修改 Android APK 的软件包名、应用名称与图标，自动识别原包名，改完自动重新打包签名，直接下载。">
+<script>
+/* 首屏渲染前预判性能档位：低配设备直接进省电档，避免闪烁 */
+(function(){try{
+  var m=localStorage.getItem('apkrepack_perf_v1')||'auto', low=false;
+  if(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4)low=true;
+  if(navigator.deviceMemory&&navigator.deviceMemory<=4)low=true;
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)low=true;
+  document.documentElement.setAttribute('data-perf',(m==='eco'||(m==='auto'&&low))?'eco':'quality');
+}catch(e){document.documentElement.setAttribute('data-perf','quality');}})();
+</script>
 <style>
 /* ============================================================
    主题变量：所有颜色都走变量，切换主题只需换一组值
@@ -417,6 +427,33 @@ body.no-glass .dock-pill{-webkit-backdrop-filter:none;backdrop-filter:none;backg
 @media (prefers-reduced-motion:reduce){
   .aurora{animation:none}.glass::before,.dock > .dock-pill,.pressable{transition:none}
 }
+
+/* ===== 性能模式分段控件 ===== */
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button{font:inherit;font-size:13px;padding:8px 16px;border-radius:11px;
+  border:1px solid var(--line-strong);background:var(--chip);color:var(--txt);
+  cursor:pointer;transition:.18s;-webkit-tap-highlight-color:transparent}
+.seg button:hover{border-color:var(--accent2)}
+.seg button.on{background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#08121f;border-color:transparent;font-weight:700}
+/* ===== 省电模式：关闭实时背景采样与无限动画，低配设备显著提帧 ===== */
+html[data-perf="eco"] *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html[data-perf="eco"] .aurora{animation:none!important;filter:none!important;
+  mix-blend-mode:normal!important;opacity:.38}
+html[data-perf="eco"] .glass{
+  /* 关掉背景采样后必须铺不透明底，否则半透明面板会透出背后正文 */
+  background:linear-gradient(180deg,var(--panel-1),var(--panel-2)),linear-gradient(180deg,var(--bg),var(--bg2));
+  box-shadow:0 6px 22px rgba(0,0,0,.30)}
+html[data-perf="eco"] .glass::before,
+html[data-perf="eco"] .glass::after{display:none!important}
+html[data-perf="eco"] .dock{background:linear-gradient(180deg,var(--panel-1),var(--panel-2)),linear-gradient(180deg,var(--bg),var(--bg2));box-shadow:0 6px 22px rgba(0,0,0,.32)}
+html[data-perf="eco"] .dock > .dock-pill{box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+html[data-perf="eco"] .dock-item .di-ico{filter:none}
+html[data-perf="eco"] .look-scrim{background:rgba(6,10,24,.66)}
+html[data-perf="eco"] .panel.flash,
+html[data-perf="eco"] .look-pop .sec.flash,
+html[data-perf="eco"] .look-pop,
+html[data-perf="eco"] .look-scrim{animation:none!important;transition:none!important}
 </style>
 </head>
 <body>
@@ -433,17 +470,17 @@ body.no-glass .dock-pill{-webkit-backdrop-filter:none;backdrop-filter:none;backg
 
 <div class="wrap">
   <header id="top">
-    <div class="badge">🔧 在线工具 · 无需安装 · 上传即改</div>
+    <div class="badge">在线工具 · 无需安装 · 上传即改</div>
     <h1>在线 APK 包名修改器</h1>
     <p class="sub">自动识别原软件包名，自定义包名、应用名称与图标；改完自动重新打包、对齐并签名，直接下载安装。</p>
   </header>
 
   <section class="panel glass">
     <div class="drop" id="drop">
-      <span class="ico">📦</span>
+      <span class="ico" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent2)"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/></svg></span>
       <b>点击选择 APK 文件，或拖拽到这里</b>
       <p>改完自动重打包并签名 · 支持断点续传与并行上传</p>
-      <button class="ghost mini pressable" id="btnCancelUp" type="button" style="display:none;margin-top:10px">✖ 取消上传</button>
+      <button class="ghost mini pressable" id="btnCancelUp" type="button" style="display:none;margin-top:10px">取消上传</button>
       <input type="file" id="file" accept=".apk,application/vnd.android.package-archive">
     </div>
 
@@ -494,23 +531,23 @@ body.no-glass .dock-pill{-webkit-backdrop-filter:none;backdrop-filter:none;backg
     <div class="sec" id="goSec" style="display:none">
       <h3><span class="n">4</span>生成并下载</h3>
       <div class="field">
-        <button class="pressable" id="btnBuild" type="button">🚀 修改并打包 APK</button>
+        <button class="pressable" id="btnBuild" type="button">修改并打包 APK</button>
         <button class="ghost pressable" id="btnAgain" type="button" style="display:none">再改一个</button>
-        <button class="ghost pressable" id="btnCancelBuild" type="button" style="display:none">✖ 取消</button>
+        <button class="ghost pressable" id="btnCancelBuild" type="button" style="display:none">取消</button>
       </div>
       <div class="bar" id="bar"><i id="barFill"></i></div>
       <div class="hint" id="buildHint"></div>
 
       <div class="result" id="result">
-        <div class="t">✅ 打包完成，已重新签名</div>
+        <div class="t">打包完成，已重新签名</div>
         <div class="d" id="resName"></div>
-        <a class="dl" id="dl" href="#">⬇ 下载 APK</a>
+        <a class="dl" id="dl" href="#">下载 APK</a>
       </div>
     </div>
   </section>
 
   <section class="panel glass" id="histPanel">
-    <h3 style="margin:0 0 14px;font-size:15px">🕘 修改历史<span class="tag" style="margin-left:10px">仅自己可见</span></h3>
+    <h3 style="margin:0 0 14px;font-size:15px">修改历史<span class="tag" style="margin-left:10px">仅自己可见</span></h3>
     <div class="hist-tools">
       <input type="text" id="histQ" spellcheck="false" autocomplete="off" placeholder="输入软件名…">
       <span class="hist-count" id="histCount"></span>
@@ -541,14 +578,14 @@ body.no-glass .dock-pill{-webkit-backdrop-filter:none;backdrop-filter:none;backg
   <section class="look-pop glass" id="appearancePanel" role="dialog" aria-modal="true"
            aria-label="外观设置" aria-hidden="true">
     <div class="lp-head">
-      🎨 外观与设置
+      外观与设置
       <span class="tag">仅保存在本机浏览器</span>
-      <button class="ghost mini pressable lp-close" id="btnLookClose" type="button" aria-label="关闭">✖ 关闭</button>
+      <button class="ghost mini pressable lp-close" id="btnLookClose" type="button" aria-label="关闭">关闭</button>
     </div>
-    <p class="lp-tip">主题、背景图、液态玻璃与后端地址都在这里；应用名称与图标在主面板第 ③ 步，或点 Dock 的「📱 改应用」快速定位。</p>
+    <p class="lp-tip">主题、背景图、液态玻璃与后端地址都在这里；应用名称与图标在主面板第 ③ 步，或点 Dock 的「改应用」快速定位。</p>
 
     <div class="sec" id="backendSec">
-      <label class="lbl">🔌 后端服务（连不上时把服务网址粘到这里）</label>
+      <label class="lbl">后端服务（连不上时把服务网址粘到这里）</label>
       <div class="field">
         <input type="text" id="backendUrl" inputmode="url" spellcheck="false"
                placeholder="https://你的后端地址" style="flex:1;min-width:170px">
@@ -556,7 +593,7 @@ body.no-glass .dock-pill{-webkit-backdrop-filter:none;backdrop-filter:none;backg
       </div>
       <div class="hint" id="backendHint">正在检测…</div>
       <div class="field" style="margin-top:6px">
-        <button class="ghost mini pressable" id="btnBackendReset" type="button">↺ 恢复默认地址</button>
+        <button class="ghost mini pressable" id="btnBackendReset" type="button">恢复默认地址</button>
         <span class="hint" style="flex-basis:auto">只保存在这台设备的浏览器里</span>
       </div>
     </div>
@@ -595,8 +632,18 @@ body.no-glass .dock-pill{-webkit-backdrop-filter:none;backdrop-filter:none;backg
       </div>
     </div>
 
+    <div class="sec" id="perfSec">
+      <label class="lbl">性能模式（低配设备建议「省电」）</label>
+      <div class="seg" id="perfSeg" role="group" aria-label="性能模式">
+        <button type="button" class="pressable" data-perf="auto">自动</button>
+        <button type="button" class="pressable" data-perf="eco">省电</button>
+        <button type="button" class="pressable" data-perf="quality">画质</button>
+      </div>
+      <div class="hint" id="perfHint">自动：按设备能力判断是否省电。</div>
+    </div>
+
     <div class="lp-foot">
-      <button class="ghost mini pressable" id="btnApReset" type="button">↺ 重置全部</button>
+      <button class="ghost mini pressable" id="btnApReset" type="button">重置全部</button>
       <span class="tag">改动即时生效并自动保存</span>
     </div>
   </section>
@@ -626,7 +673,7 @@ body.no-glass .dock-pill{-webkit-backdrop-filter:none;backdrop-filter:none;backg
 /* ===== 站点配置 =====
    apiBase   后端候选地址，按序探活、失败自动切换。
              '' = 先试同源 /api（后端自带页面时用），第二项是创空间地址（静态托管时用）。
-             一般不用手改：页面 Dock 的「⚙️ 后端」里粘一次网址即可，浏览器会记住并优先使用。
+             一般不用手改：页面 Dock 的「后端」里粘一次网址即可，浏览器会记住并优先使用。
    author / email / feedbackUrl   开发者与反馈入口 */
 window.APK_CONFIG = {
   apiBase: ['', 'https://vesper123-apk-rename.ms.show'],
@@ -640,6 +687,61 @@ window.APK_CONFIG = {
   'use strict';
   var $ = function(id){ return document.getElementById(id); };
   var state = { file:null, oldPkg:'', version:'', uploadId:'', iconFile:null, busy:false };
+
+  /* ===== 性能模式：低配设备自动省电，高端设备保留液态玻璃 ===== */
+  var PERF_KEY = 'apkrepack_perf_v1';
+  var perfPref = (function(){ try{ return localStorage.getItem(PERF_KEY) || 'auto'; }catch(e){ return 'auto'; } })();
+  var perfAutoEco = (function(){
+    try{
+      if(navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) return true;
+      if(navigator.deviceMemory && navigator.deviceMemory <= 4) return true;
+      if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
+    }catch(e){}
+    return false;
+  })();
+  function perfIsEco(){ return perfPref === 'eco' || (perfPref === 'auto' && perfAutoEco); }
+  function applyPerf(){
+    document.documentElement.setAttribute('data-perf', perfIsEco() ? 'eco' : 'quality');
+    var seg = $('perfSeg');
+    if(!seg) return;
+    [].slice.call(seg.querySelectorAll('button')).forEach(function(b){
+      b.classList.toggle('on', b.getAttribute('data-perf') === perfPref);
+    });
+    var h = $('perfHint');
+    if(h) h.textContent = perfPref === 'eco'
+      ? '省电：关闭实时背景采样与极光动画，低配设备更流畅。'
+      : perfPref === 'quality'
+        ? '画质：保留完整液态玻璃效果，适合性能较好的设备。'
+        : '自动：按设备能力判断是否省电' + (perfAutoEco ? '，当前已自动切到省电' : '，当前为完整画质') + '。';
+  }
+  function setPerf(m){
+    perfPref = m;
+    try{ localStorage.setItem(PERF_KEY, m); }catch(e){}
+    applyPerf();
+  }
+  var segEl = $('perfSeg');
+  if(segEl) segEl.addEventListener('click', function(ev){
+    var b = ev.target;
+    while(b && b !== segEl && !(b.getAttribute && b.getAttribute('data-perf'))) b = b.parentNode;
+    if(b && b.getAttribute && b.getAttribute('data-perf')) setPerf(b.getAttribute('data-perf'));
+  });
+  applyPerf();
+  /* 自动档再做一次短帧率采样：硬件参数好看但实际卡顿也能兜住 */
+  (function sampleFps(){
+    if(perfPref !== 'auto' || perfAutoEco) return;
+    var n = 0, t0 = 0;
+    var raf = window.requestAnimationFrame || function(f){ return setTimeout(f, 16); };
+    function tick(t){
+      if(!t0){ t0 = t; raf(tick); return; }
+      n++;
+      if(n >= 40){
+        if(n * 1000 / Math.max(1, t - t0) < 42){ perfAutoEco = true; applyPerf(); }
+        return;
+      }
+      raf(tick);
+    }
+    raf(tick);
+  })();
 
   /* ================= 外观：主题 / 背景 / 玻璃参数 ================= */
   var APPEAR_KEY = 'apkrepack_appearance_v1';
@@ -857,7 +959,7 @@ window.APK_CONFIG = {
   }
   var apiCandidates = buildCandidates();
   var apiBase = null, failed = {}, probing = null, warned = false;
-  var NO_BACKEND = '还没连上后端：请点 Dock 的「⚙️ 后端」，把服务网址粘进去保存';
+  var NO_BACKEND = '还没连上后端：请点 Dock 的「后端」，把服务网址粘进去保存';
 
   function ensureApi(){
     if(apiBase !== null) return Promise.resolve(apiBase);
@@ -883,7 +985,7 @@ window.APK_CONFIG = {
   function warnBackend(){
     if(warned) return; warned = true; toast(NO_BACKEND, true);
   }
-  /* 由「⚙️ 后端」面板调用：保存地址 → 重新探活 → 反馈结果 */
+  /* 由「后端」面板调用：保存地址 → 重新探活 → 反馈结果 */
   function applyBackend(url, quiet){
     var v = normBase(url);
     // 填了地址就先单独验证：避免「看似连上，其实悄悄回退到默认后端」的误导
@@ -1165,6 +1267,16 @@ window.APK_CONFIG = {
     if(!/\.apk$/i.test(file.name)){ toast('请选择 .apk 文件', true); return; }
     state.busy = true; aborted = false;
     $('btnCancelUp').style.display = '';
+    var dropRaf = 0, dropHtml = null, dropLast = null;
+    function writeDrop(html){
+      dropHtml = html;
+      if(dropRaf) return;
+      var raf = window.requestAnimationFrame || function(f){ return setTimeout(f, 16); };
+      dropRaf = raf(function(){
+        dropRaf = 0;
+        if(dropHtml !== dropLast){ drop.querySelector('b').innerHTML = dropHtml; dropLast = dropHtml; }
+      });
+    }
     function uploadText(p, speed){
       if(p >= 1) return '<span class="spin"></span> 上传完成，正在解析…';
       var eta = speed > 0 ? ((1 - p) * file.size) / speed : NaN;
@@ -1173,12 +1285,12 @@ window.APK_CONFIG = {
       if(p > 0.02 && isFinite(eta)) msg += ' · 预计还需 ' + fmtEta(eta);
       return '<span class="spin"></span> ' + msg;
     }
-    drop.querySelector('b').innerHTML = uploadText(0, 0);
+    writeDrop(uploadText(0, 0));
     var sid = makeSid();
     uploadStream(file, sid, 'apk', function(p, speed){
-      drop.querySelector('b').innerHTML = uploadText(p, speed);
+      writeDrop(uploadText(p, speed));
     }).then(function(){
-      drop.querySelector('b').innerHTML = '<span class="spin"></span> 上传完成，正在解析…';
+      writeDrop('<span class="spin"></span> 上传完成，正在解析…');
       return apiRequest('/api/analyze?sid=' + encodeURIComponent(sid) +
                         '&name=' + encodeURIComponent(file.name), { method:'POST', json:true });
     }).then(function(info){
@@ -1235,14 +1347,32 @@ window.APK_CONFIG = {
       var sec = Math.round((Date.now() - t0) / 1000);
       return '<span class="spin"></span> ' + phase + '… 已用时 ' + sec + ' 秒';
     }
+    var barRaf = 0, barP = 0, hintHtml = null, hintLast = null, hintRaf = 0;
+    var rafFn = window.requestAnimationFrame || function(f){ return setTimeout(f, 16); };
+    function writeBar(p){
+      barP = p;
+      if(barRaf) return;
+      barRaf = rafFn(function(){
+        barRaf = 0;
+        $('barFill').style.width = (Math.max(0, Math.min(100, barP)) * 100).toFixed(0) + '%';
+      });
+    }
+    function writeHint(html){
+      hintHtml = html;
+      if(hintRaf) return;
+      hintRaf = rafFn(function(){
+        hintRaf = 0;
+        if(hintHtml !== hintLast){ hint.innerHTML = hintHtml; hintLast = hintHtml; }
+      });
+    }
     function setProgress(p, text){
-      $('barFill').style.width = (Math.max(0, Math.min(100, p)) * 100).toFixed(0) + '%';
-      if(text) hint.innerHTML = text;
+      writeBar(p);
+      if(text) writeHint(text);
     }
     var timer = setInterval(function(){
-      if(lastPhase && lastPhase.indexOf('上传') < 0) hint.innerHTML = busyText(lastPhase);
+      if(lastPhase && lastPhase.indexOf('上传') < 0) writeHint(busyText(lastPhase));
     }, 1000);
-    hint.innerHTML = busyText('准备上传');
+    writeHint(busyText('准备上传'));
 
     function prepareApk(){
       if(state.uploadId) return Promise.resolve();
@@ -1272,7 +1402,7 @@ window.APK_CONFIG = {
                 '&label=' + encodeURIComponent(label) +
                 '&upload_id=' + encodeURIComponent(state.uploadId) +
                 (iconSid ? '&icon_sid=' + encodeURIComponent(iconSid) : '');
-      hint.innerHTML = busyText('服务端重打包、对齐并签名');
+      writeHint(busyText('服务端重打包、对齐并签名'));
       setProgress(0.45);
       return apiRequest(url, { method:'POST', retries:1 });
     }
@@ -1282,7 +1412,7 @@ window.APK_CONFIG = {
     attempt().catch(function(err){
       if(err && err.code === 'expired'){
         state.uploadId = '';
-        hint.innerHTML = busyText('暂存已过期，正在重新上传');
+        writeHint(busyText('暂存已过期，正在重新上传'));
         return attempt();
       }
       throw err;
@@ -1408,7 +1538,7 @@ window.APK_CONFIG = {
     $('cfgFeedback').href = fb;
   })();
 
-  /* ===== 「⚙️ 后端」面板：不用改代码，粘网址即可 ===== */
+  /* ===== 「后端」面板：不用改代码，粘网址即可 ===== */
   (function bindBackendPanel(){
     var inp = $('backendUrl'), hint = $('backendHint');
     var probeDone = false;
