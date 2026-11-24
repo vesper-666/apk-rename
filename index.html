@@ -231,7 +231,21 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0 0 10px;letter-spacing:.5px;
 .drop .ico{font-size:40px;display:block;margin-bottom:10px}
 .drop b{font-size:17px}
 .drop p{margin:6px 0 0;color:var(--muted);font-size:13px}
-#file{display:none}
+/* 上传输入：透明覆盖层方案（兼容 Chromium 内核浏览器 / WebView / 套壳浏览器）
+   旧方案 input{display:none}+JS.click() 在部分 Chromium 衍生内核会被安全策略拦截，
+   不弹文件框。改为 input 透明铺满可点区域，让点击直接落在真实 input 上，
+   由浏览器原生处理，零 JS 依赖。 */
+.pick{position:relative;overflow:hidden}
+.pick > input[type=file]{
+  position:absolute;inset:0;width:100%;height:100%;
+  opacity:0;cursor:pointer;z-index:3;font-size:0;
+  -webkit-appearance:none;appearance:none;
+}
+.pick > input[type=file]::-webkit-file-upload-button{
+  position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0;
+}
+.pick > *{position:relative;z-index:1}
+.pick > input[type=file]{z-index:3}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:4px}
 .stat{background:var(--chip);border:1px solid var(--line);border-radius:14px;padding:13px 15px}
 .stat .k{font-size:12px;color:var(--muted);letter-spacing:.4px}
@@ -494,12 +508,12 @@ html[data-perf="eco"] .look-scrim{animation:none!important;transition:none!impor
   </header>
 
   <section class="panel glass">
-    <div class="drop" id="drop">
+    <div class="drop pick" id="drop">
+      <input type="file" id="file" accept=".apk,application/vnd.android.package-archive" aria-label="选择 APK 文件">
       <span class="ico" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent2)"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/></svg></span>
       <b>点击选择 APK 文件，或拖拽到这里</b>
       <p>改完自动重打包并签名 · 支持断点续传与并行上传</p>
       <button class="ghost mini pressable" id="btnCancelUp" type="button" style="display:none;margin-top:10px">取消上传</button>
-      <input type="file" id="file" accept=".apk,application/vnd.android.package-archive">
     </div>
 
     <div class="sec" id="infoSec" style="display:none">
@@ -535,11 +549,11 @@ html[data-perf="eco"] .look-scrim{animation:none!important;transition:none!impor
         </div>
         <div>
           <label class="lbl">应用图标</label>
-          <div class="icon-picker" id="iconPicker">
+          <div class="icon-picker pick" id="iconPicker">
+            <input type="file" id="iconFile" accept="image/png,image/jpeg,image/webp" aria-label="选择应用图标">
             <img id="iconPreview" alt="图标预览" hidden>
             <span id="iconEmpty">点击选择 PNG / JPG / WEBP</span>
             <button class="ghost mini pressable" id="btnIconClear" type="button" hidden>移除</button>
-            <input type="file" id="iconFile" accept="image/png,image/jpeg,image/webp" hidden>
           </div>
           <div class="hint" id="iconHint">会自动按各分辨率重绘并替换启动器图标。</div>
         </div>
@@ -630,9 +644,10 @@ html[data-perf="eco"] .look-scrim{animation:none!important;transition:none!impor
     <div class="sec">
       <label class="lbl">自定义背景图（自动压缩到 1600px 以内）</label>
       <div class="field">
-        <button class="ghost pressable" id="btnBgPick" type="button">选择图片</button>
+        <label class="ghost pressable pick" id="btnBgPick" for="bgFile" style="display:inline-flex;align-items:center;cursor:pointer">选择图片
+          <input type="file" id="bgFile" accept="image/*" aria-label="选择背景图片">
+        </label>
         <button class="ghost pressable" id="btnBgClear" type="button">清除</button>
-        <input type="file" id="bgFile" accept="image/*" hidden>
         <div class="hint" id="bgHint">当前使用内置渐变与极光。</div>
       </div>
     </div>
@@ -817,7 +832,6 @@ window.APK_CONFIG = {
     appear = JSON.parse(JSON.stringify(DEFAULT_APPEAR)); saveAppear(); applyAppearance();
     toast('外观设置已重置');
   });
-  $('btnBgPick').addEventListener('click', function(){ $('bgFile').click(); });
   $('btnBgClear').addEventListener('click', function(){
     appear.bg = ''; saveAppear(); applyAppearance(); toast('已恢复默认背景');
   });
@@ -1237,8 +1251,9 @@ window.APK_CONFIG = {
 
   /* ================= 图标选择与预览 ================= */
   $('iconPicker').addEventListener('click', function(ev){
-    // input.click() 会派发 click 并冒泡回这里，必须挡住，否则递归打开文件框
-    if(ev.target.id === 'btnIconClear' || ev.target.id === 'iconFile') return;
+    // 透明 input 已铺满，点击直接落 input；这里兜底并挡住冒泡递归
+    if(ev.target.id === 'btnIconClear' || (ev.target.closest && ev.target.closest('#btnIconClear'))) return;
+    if(ev.target.id === 'iconFile' || (ev.target.closest && ev.target.closest('input[type=file]'))) return;
     $('iconFile').click();
   });
   $('btnIconClear').addEventListener('click', function(ev){
@@ -1273,9 +1288,11 @@ window.APK_CONFIG = {
   /* ================= 上传 APK ================= */
   var drop = $('drop'), fileInput = $('file');
   drop.addEventListener('click', function(ev){
-    // 同样要挡住 fileInput.click() 冒泡回来造成的递归
-    if(ev.target === fileInput || ev.target.id === 'btnCancelUp') return;
-    if(!state.busy) fileInput.click();
+    // 透明 input 已铺满区域，点击通常直接落在 input 上由浏览器原生处理；
+    // 这里仅兜底点击到非 input 子元素的情况，并挡住 input.click 冒泡递归。
+    if(ev.target === fileInput || ev.target.closest && ev.target.closest('input[type=file]')) return;
+    if(ev.target.id === 'btnCancelUp' || (ev.target.closest && ev.target.closest('#btnCancelUp'))) return;
+    if(!state.busy && typeof fileInput.click === 'function') fileInput.click();
   });
   fileInput.addEventListener('change', function(){ if(fileInput.files[0]) handle(fileInput.files[0]); });
   ['dragenter','dragover'].forEach(function(e){
